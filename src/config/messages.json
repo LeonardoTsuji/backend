@@ -1,0 +1,15 @@
+{
+  "account.signup.emailExists": "E-mail já cadastrado",
+  "account.signup.success": "Cadastro efetuado com sucesso!",
+  "account.signup.email.string.empty": "E-mail é obrigatório",
+  "account.signup.email.string.email": "E-mail não é válido",
+  "account.signup.passwordConfirmation.any.required": "Confirmação de senha é obrigatório",
+  "account.signup.passwordConfirmation.string.empty": "Senha é obrigatório",
+  "account.signup.passwordConfirmation.string.pattern.base": "Senha deve conter entre 3 a 30 caracteres e incluir letras e números",
+  "account.signin.invalid": "Credenciais inválidas",
+  "account.signin.success": "Login efetuado com sucesso!",
+  "account.signin.email.string.empty": "E-mail é obrigatório",
+  "account.signin.email.string.email": "E-mail não é válido",
+  "account.signin.passwordConfirmation.string.empty": "Senha é obrigatório",
+  "account.signin.passwordConfirmation.string.pattern.base": "Senha deve conter entre 3 a 30 caracteres e incluir letras e números"
+}
