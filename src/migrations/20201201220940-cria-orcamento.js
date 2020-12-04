@@ -3,7 +3,7 @@
 module.exports = {
   up: async (queryInterface, DataTypes) => {
     return queryInterface.createTable(
-      "product",
+      "category",
       {
         id: {
           allowNull: false,
@@ -11,22 +11,17 @@ module.exports = {
           primaryKey: true,
           type: DataTypes.INTEGER,
         },
-        name: {
+        expirationDate: {
+          allowNull: false,
+          type: DataTypes.DATE,
+        },
+        paymentMethod: {
           allowNull: false,
           type: DataTypes.STRING,
-          unique: true,
         },
-        description: {
-          allowNull: true,
-          type: DataTypes.STRING,
-        },
-        price: {
+        amount: {
           allowNull: false,
           type: DataTypes.DOUBLE,
-        },
-        brandId: {
-          allowNull: false,
-          type: DataTypes.INTEGER,
         },
         createdAt: {
           allowNull: false,
@@ -36,14 +31,18 @@ module.exports = {
           allowNull: false,
           type: DataTypes.DATE,
         },
+        userId: {
+          allowNull: false,
+          type: DataTypes.INTEGER,
+        },
       },
       {
-        tableName: "product",
+        tableName: "category",
       }
     );
   },
 
   down: async (queryInterface, Sequelize) => {
-    return queryInterface.dropTable("product");
+    return queryInterface.dropTable("category");
   },
 };

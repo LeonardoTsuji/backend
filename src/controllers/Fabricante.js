@@ -94,8 +94,9 @@ router.get("/:id", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   const { name } = req.body;
+  const { id } = req.params;
 
-  await Brand.findOne({ where: { name } })
+  await Brand.findOne({ where: { id } })
     .then(async function (fabricante) {
       if (fabricante) {
         await Brand.update(
@@ -121,6 +122,11 @@ router.put("/:id", async (req, res) => {
             });
           });
       }
+      return res.jsonError({
+        data: null,
+        status: 404,
+        message: "Não foi possível encontrar o fabricante",
+      });
     })
     .catch(function (err) {
       return res.jsonError({

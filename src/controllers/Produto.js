@@ -2,7 +2,7 @@ const express = require("express");
 
 const { QueryTypes } = require("sequelize");
 
-const { Product, Category, Brand } = require("../models");
+const { Product, Category, Brand, CategoryProduct } = require("../models");
 
 const { sequelize } = require("../models/index");
 const router = express.Router();
@@ -25,6 +25,7 @@ router.post("/", async (req, res) => {
       });
     })
     .catch(function (err) {
+      console.log(err);
       return res.jsonError({
         status: 400,
         data: err,
@@ -78,10 +79,13 @@ router.get("/:id", async (req, res) => {
   const { name } = req.query;
 
   await sequelize
-    .query("SELECT * FROM product WHERE id = :id", {
-      replacements: { id },
-      type: QueryTypes.SELECT,
-    })
+    .query(
+      "SELECT * FROM product, category, categoryProduct WHERE product.id = categoryProduct.categoryId and category.id = categoryProduct.productId and product.id = :id",
+      {
+        replacements: { id },
+        type: QueryTypes.SELECT,
+      }
+    )
     .then(function (produto) {
       if (produto)
         return res.jsonOK({
@@ -96,6 +100,7 @@ router.get("/:id", async (req, res) => {
       });
     })
     .catch(function (err) {
+      console.log(err, "err");
       return res.jsonError({
         data: err,
         status: 400,
@@ -106,14 +111,22 @@ router.get("/:id", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   const { name, description, price, idFabricante, idCategoria } = req.body;
+  const { id } = req.params;
 
-  await Product.findOne({ where: { email } })
+  await sequelize
+    .query(
+      "SELECT product.*, category.* FROM product, category, categoryProduct WHERE product.id = categoryProduct.categoryId and category.id = categoryProduct.productId and product.id = :id",
+      {
+        replacements: { id },
+        type: QueryTypes.SELECT,
+      }
+    )
     .then(async function (produto) {
       if (produto) {
         await Product.update(
           { name, description, price, idFabricante, idCategoria },
           {
-            where: { id: produto.dataValues.id },
+            where: { id: produto[0].id },
             returning: true,
             plain: true,
           }
@@ -133,22 +146,35 @@ router.put("/:id", async (req, res) => {
             });
           });
       }
-    })
-    .catch(function (err) {
       return res.jsonError({
         data: null,
         status: 404,
         message: "Não foi possível encontrar o produto",
+      });
+    })
+    .catch(function (err) {
+      console.log(err);
+      return res.jsonError({
+        data: err,
+        status: 400,
+        message: "Erro ao encontrar o produto",
       });
     });
 });
 
 router.delete("/:id", async (req, res) => {
   const { name } = req.body;
+  const { id } = req.params;
 
-  await Product.findOne({ where: { name } })
+  await sequelize
+    .query(
+      "SELECT product.*, category.* FROM product, category, categoryProduct WHERE product.id = categoryProduct.categoryId and category.id = categoryProduct.productId and product.id = :id",
+      {
+        replacements: { id },
+        type: QueryTypes.SELECT,
+      }
+    )
     .then(async function (produto) {
-      console.log(produto);
       if (produto) {
         await Product.destroy({
           where: { id: produto.dataValues.id },

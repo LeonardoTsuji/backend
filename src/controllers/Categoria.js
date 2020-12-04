@@ -93,9 +93,10 @@ router.get("/:id", async (req, res) => {
 });
 
 router.put("/:id", async (req, res) => {
+  const { id } = req.params;
   const { name } = req.body;
 
-  await Category.findOne({ where: { name } })
+  await Category.findOne({ where: { id } })
     .then(async function (categoria) {
       if (categoria) {
         await Category.update(
@@ -123,8 +124,9 @@ router.put("/:id", async (req, res) => {
       }
     })
     .catch(function (err) {
+      console.log(err);
       return res.jsonError({
-        data: null,
+        data: err,
         status: 404,
         message: "Não foi possível encontrar o categoria",
       });
