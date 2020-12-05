@@ -8,12 +8,14 @@ const app = express();
 const response = require("./middlewares/response");
 
 //Controllers
-const usuario = require("./controllers/Usuario");
-const operador = require("./controllers/Operador");
+const usuario = require("./controllers/User");
+const regra = require("./controllers/Role");
+const vinculo = require("./controllers/Link");
 const auth = require("./controllers/Auth");
-const fabricante = require("./controllers/Fabricante");
-const categoria = require("./controllers/Categoria");
-const produto = require("./controllers/Produto");
+const fabricante = require("./controllers/Brand");
+const categoria = require("./controllers/Category");
+const produto = require("./controllers/Product");
+const servicoMecanico = require("./controllers/MechanicalService");
 
 app.use(cors());
 app.use(response);
@@ -22,9 +24,11 @@ app.use(bodyParser.json());
 
 app.use(auth);
 app.use("/usuario", usuario);
-app.use("/operador", operador);
+app.use("/regra", regra);
+app.use("/vinculo", vinculo);
 app.use("/fabricante", fabricante);
 app.use("/categoria", categoria);
 app.use("/produto", produto);
+app.use("/servico-mecanico", servicoMecanico);
 
 app.listen(3333);

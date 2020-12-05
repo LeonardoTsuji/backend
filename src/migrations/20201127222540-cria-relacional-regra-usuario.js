@@ -3,7 +3,7 @@
 module.exports = {
   up: async (queryInterface, DataTypes) => {
     return queryInterface.createTable(
-      "opertadorUser",
+      "roleUser",
       {
         id: {
           allowNull: false,
@@ -19,22 +19,22 @@ module.exports = {
             key: "id",
           },
         },
-        operatorId: {
+        roleId: {
           type: DataTypes.INTEGER,
           allowNull: false,
           references: {
-            model: "Operator",
+            model: "Role",
             key: "id",
           },
         },
       },
       {
-        tableName: "opertadorUser",
+        tableName: "roleUser",
       }
     );
   },
 
   down: async (queryInterface, Sequelize) => {
-    return queryInterface.dropTable("opertadorUser");
+    return queryInterface.dropTable("roleUser");
   },
 };

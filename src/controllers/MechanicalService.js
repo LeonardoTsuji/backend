@@ -1,34 +1,34 @@
 const express = require("express");
 
-const { Brand } = require("../models");
+const { MechanicalService } = require("../models");
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
-  const { name } = req.body;
+  const { name, description, price } = req.body;
 
-  await Brand.findOne({ where: { name } })
-    .then(async function (fabricante) {
-      if (fabricante)
+  await MechanicalService.findOne({ where: { name } })
+    .then(async function (servicoMecanico) {
+      if (servicoMecanico)
         return res.jsonError({
           data: null,
           status: 400,
-          message: "Fabricante já cadastrado",
+          message: "Serviço mecânico já cadastrado",
         });
 
-      await Brand.create({ name })
+      await MechanicalService.create({ name, description, price })
         .then(function (novoProduto) {
           return res.jsonOK({
             data: novoProduto,
             status: 201,
-            message: "Fabricante cadastrado com sucesso!",
+            message: "Serviço mecânico cadastrado com sucesso!",
           });
         })
         .catch(function (err) {
           return res.jsonError({
             status: 400,
             data: err,
-            message: "Não foi possível cadastrar o fabricante",
+            message: "Não foi possível cadastrar o servicoMecanico",
           });
         });
     })
@@ -36,82 +36,81 @@ router.post("/", async (req, res) => {
       return res.jsonError({
         status: 400,
         data: err,
-        message: "Erro ao cadastrar o fabricante",
+        message: "Erro ao cadastrar o servicoMecanico",
       });
     });
 });
 
 router.get("/", async (req, res) => {
-  await Brand.findAll()
-    .then(function (fabricantes) {
-      if (fabricantes)
+  await MechanicalService.findAll()
+    .then(function (servicosMecanicos) {
+      if (servicosMecanicos)
         return res.jsonOK({
-          data: fabricantes,
+          data: servicosMecanicos,
           status: 200,
-          message: "Fabricantes encontrado com sucesso!",
+          message: "Serviços mecânicos encontrado com sucesso!",
         });
       return res.jsonError({
         data: null,
         status: 404,
-        message: "Não foi possível encontrar os fabricantes",
+        message: "Não foi possível encontrar os servicosMecanicos",
       });
     })
     .catch(function (err) {
       return res.jsonError({
         data: err,
         status: 400,
-        message: "Erro ao tentar encontrar os fabricantes",
+        message: "Erro ao tentar encontrar os servicosMecanicos",
       });
     });
 });
 
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
-  const { name } = req.query;
 
-  await Brand.findOne({ where: { name }, include: "produtos" })
-    .then(function (fabricante) {
-      if (fabricante)
+  await MechanicalService.findOne({ where: { id } })
+    .then(function (servicoMecanico) {
+      if (servicoMecanico)
         return res.jsonOK({
-          data: fabricante,
+          data: servicoMecanico,
           status: 200,
-          message: "Fabricante encontrado com sucesso!",
+          message: "Serviço mecânico encontrado com sucesso!",
         });
       return res.jsonError({
         data: null,
         status: 404,
-        message: "Não foi possível encontrar o fabricante",
+        message: "Não foi possível encontrar o servicoMecanico",
       });
     })
     .catch(function (err) {
       return res.jsonError({
         data: {},
         status: 400,
-        message: "Erro ao encontrar o fabricante",
+        message: "Erro ao encontrar o servicoMecanico",
       });
     });
 });
 
 router.put("/:id", async (req, res) => {
-  const { name } = req.body;
   const { id } = req.params;
+  const { name, description, price } = req.body;
 
-  await Brand.findOne({ where: { id } })
-    .then(async function (fabricante) {
-      if (fabricante) {
-        await Brand.update(
-          { name },
+  await MechanicalService.findOne({ where: { id } })
+    .then(async function (servicoMecanico) {
+      if (servicoMecanico) {
+        await MechanicalService.update(
+          { name, description, price },
           {
-            where: { id: fabricante.dataValues.id },
+            where: { id: servicoMecanico.dataValues.id },
             returning: true,
             plain: true,
           }
         )
-          .then(function (fabricanteAtualizado) {
+          .then(function (categoriaAtualizada) {
             return res.jsonOK({
-              data: fabricanteAtualizado,
+              data: categoriaAtualizada,
               status: 200,
-              message: "Fabricante atualizado com sucesso!",
+              message: "Serviço mecânico atualizado com sucesso!",
             });
           })
           .catch(function (err) {
@@ -122,36 +121,31 @@ router.put("/:id", async (req, res) => {
             });
           });
       }
-      return res.jsonError({
-        data: null,
-        status: 404,
-        message: "Não foi possível encontrar o fabricante",
-      });
     })
     .catch(function (err) {
+      console.log(err);
       return res.jsonError({
-        data: null,
+        data: err,
         status: 404,
-        message: "Não foi possível encontrar o fabricante",
+        message: "Não foi possível encontrar o servicoMecanico",
       });
     });
 });
 
 router.delete("/:id", async (req, res) => {
-  const { name } = req.body;
+  const { id } = req.params;
 
-  await Brand.findOne({ where: { name } })
-    .then(async function (fabricante) {
-      console.log(fabricante);
-      if (fabricante) {
-        await Brand.destroy({
-          where: { id: fabricante.dataValues.id },
+  await MechanicalService.findOne({ where: { id } })
+    .then(async function (servicoMecanico) {
+      if (servicoMecanico) {
+        await MechanicalService.destroy({
+          where: { id: servicoMecanico.dataValues.id },
         })
-          .then(function (fabricanteAtualizado) {
+          .then(function (categoriaAtualizada) {
             return res.jsonOK({
-              data: fabricanteAtualizado,
+              data: categoriaAtualizada,
               status: 200,
-              message: "Fabricante excluído com sucesso!",
+              message: "Serviço mecânico excluído com sucesso!",
             });
           })
           .catch(function (err) {
@@ -166,14 +160,14 @@ router.delete("/:id", async (req, res) => {
       return res.jsonError({
         data: null,
         status: 404,
-        message: "Não foi possível encontrar o fabricante",
+        message: "Não foi possível encontrar o servicoMecanico",
       });
     })
     .catch(function (err) {
       return res.jsonError({
         data: err,
         status: 400,
-        message: "Erro ao encontrar o fabricante",
+        message: "Erro ao encontrar o servicoMecanico",
       });
     });
 });

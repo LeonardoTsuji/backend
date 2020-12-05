@@ -3,7 +3,7 @@
 module.exports = {
   up: async (queryInterface, DataTypes) => {
     return queryInterface.createTable(
-      "operator",
+      "mechanicalService",
       {
         id: {
           allowNull: false,
@@ -14,24 +14,15 @@ module.exports = {
         name: {
           allowNull: false,
           type: DataTypes.STRING,
-        },
-        email: {
-          allowNull: false,
-          type: DataTypes.STRING,
           unique: true,
         },
-        phone: {
-          allowNull: false,
-          type: DataTypes.STRING,
-          unique: true,
-        },
-        password: {
+        description: {
           allowNull: false,
           type: DataTypes.STRING,
         },
-        admin: {
+        price: {
           allowNull: false,
-          type: DataTypes.STRING,
+          type: DataTypes.DOUBLE,
         },
         createdAt: {
           allowNull: false,
@@ -43,12 +34,12 @@ module.exports = {
         },
       },
       {
-        tableName: "operator",
+        tableName: "mechanicalService",
       }
     );
   },
 
   down: async (queryInterface, Sequelize) => {
-    return queryInterface.dropTable("operator");
+    return queryInterface.dropTable("mechanicalService");
   },
 };

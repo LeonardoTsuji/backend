@@ -67,9 +67,8 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
-  const { name } = req.query;
 
-  await Category.findOne({ where: { name } })
+  await Category.findOne({ where: { id } })
     .then(function (categoria) {
       if (categoria)
         return res.jsonOK({
@@ -134,11 +133,10 @@ router.put("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const { name } = req.body;
+  const { id } = req.params;
 
-  await Category.findOne({ where: { name } })
+  await Category.findOne({ where: { id } })
     .then(async function (categoria) {
-      console.log(categoria);
       if (categoria) {
         await Category.destroy({
           where: { id: categoria.dataValues.id },

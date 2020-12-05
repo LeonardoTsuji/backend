@@ -3,7 +3,7 @@
 module.exports = {
   up: async (queryInterface, DataTypes) => {
     return queryInterface.createTable(
-      "product",
+      "role",
       {
         id: {
           allowNull: false,
@@ -11,22 +11,10 @@ module.exports = {
           primaryKey: true,
           type: DataTypes.INTEGER,
         },
-        name: {
+        description: {
           allowNull: false,
           type: DataTypes.STRING,
           unique: true,
-        },
-        description: {
-          allowNull: true,
-          type: DataTypes.STRING,
-        },
-        price: {
-          allowNull: false,
-          type: DataTypes.DOUBLE,
-        },
-        brandId: {
-          allowNull: false,
-          type: DataTypes.INTEGER,
         },
         createdAt: {
           allowNull: false,
@@ -38,12 +26,12 @@ module.exports = {
         },
       },
       {
-        tableName: "product",
+        tableName: "role",
       }
     );
   },
 
   down: async (queryInterface, Sequelize) => {
-    return queryInterface.dropTable("product");
+    return queryInterface.dropTable("role");
   },
 };

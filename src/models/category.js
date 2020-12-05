@@ -21,7 +21,6 @@ module.exports = (sequelize, DataTypes) => {
       constraint: true,
       otherKey: "productId",
       through: "categoryProduct",
-      // as: "product",
     });
   };
   return Category;
