@@ -1,14 +1,15 @@
 const express = require("express");
 
-const { RoleUser } = require("../models");
+const { ResourceRole } = require("../models");
 
 const router = express.Router();
 
-router.post("/vinculo", async (req, res) => {
-  const { idUsuario, idRegra } = req.body;
-  await RoleUser.create({
-    userId: idUsuario,
-    roleId: idRegra,
+router.post("/", async (req, res) => {
+  const { resourceId, roleId, permission } = req.body;
+  await ResourceRole.create({
+    resourceId,
+    roleId,
+    permission,
   })
     .then(async function (role) {
       return res.jsonOK({
@@ -26,10 +27,9 @@ router.post("/vinculo", async (req, res) => {
     });
 });
 
-router.get("/vinculo", async (req, res) => {
-  const { idUsuario, idRegra } = req.body;
-  await RoleUser.findAll({ where: { userId: idUsuario } })
-    .then(async function (roles) {
+router.get("/", async (req, res) => {
+  await ResourceRole.findAll()
+    .then(function (roles) {
       if (roles) {
         return res.jsonOK({
           data: roles,

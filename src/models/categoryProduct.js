@@ -2,12 +2,6 @@ module.exports = (sequelize, DataTypes) => {
   const CategoryProduct = sequelize.define(
     "CategoryProduct",
     {
-      id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        allowNull: false,
-        primaryKey: true,
-      },
       productId: {
         type: DataTypes.INTEGER,
       },
@@ -22,13 +16,13 @@ module.exports = (sequelize, DataTypes) => {
 
   //Relacionamentos
   CategoryProduct.associate = function (models) {
-    CategoryProduct.belongsTo(models.Category, {
-      foreignKey: "productId",
-      targetKey: "id",
-    });
-    CategoryProduct.belongsTo(models.Product, {
+    CategoryProduct.belongsToMany(models.Category, {
       foreignKey: "categoryId",
-      targetKey: "id",
+      through: "categoryProduct",
+    });
+    CategoryProduct.belongsToMany(models.Product, {
+      foreignKey: "productId",
+      through: "categoryProduct",
     });
   };
   return CategoryProduct;

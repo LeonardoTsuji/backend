@@ -1,77 +1,126 @@
 const express = require("express");
-
-const { QueryTypes } = require("sequelize");
-
-const { Budget, Product, User } = require("../models");
-
-const { sequelize } = require("../models/index");
 const router = express.Router();
+
+const { Budget, Product, BudgetProduct } = require("../models");
 
 router.post("/", async (req, res) => {
   const {
     expirationDate,
-    userId,
     paymentMethod,
-    amount,
-    quantity,
     status,
-    description,
-    price,
-    categoryId,
+    userId,
+    products,
+    userVehicleId,
   } = req.body;
 
-  await Product.create({
-    name,
-    description,
-    price,
-    brandId,
-  })
-    .then(async function (novoProduto) {
-      await novoProduto.setCategory([categoryId]);
-      return res.jsonOK({
-        data: novoProduto,
-        status: 201,
-        message: "Produto cadastrado com sucesso!",
-      });
-    })
-    .catch(function (err) {
-      console.log(err);
-      return res.jsonError({
-        status: 400,
-        data: err,
-        message: "Não foi possível cadastrar o produto",
-      });
+  const savedBudget = await Budget.create({
+    expirationDate: expirationDate || new Date(),
+    paymentMethod,
+    status,
+    userId,
+    userVehicleId,
+  });
+
+  if (products) {
+    const promisesProducts = products.map(async (item) => {
+      const product = await Product.findByPk(item.productId);
+
+      if (!product) {
+        return res.jsonError({
+          data: null,
+          status: 400,
+          message: "Erro ao tentar encontrar o produto",
+        });
+      }
+
+      const po = {
+        budgetId: savedBudget.dataValues.id,
+        productId: item.productId,
+        quantity: item.quantity,
+      };
+
+      await BudgetProduct.create(po, { w: 1 }, { returning: true });
     });
+
+    Promise.all(await promisesProducts);
+  }
+
+  return res.jsonOK({
+    data: savedBudget,
+    status: 200,
+    message: "Orçamento criado com sucesso!",
+  });
 });
 
 router.get("/", async (req, res) => {
-  await sequelize
-    .query(
-      `SELECT * 
-              FROM product
-            `,
-      { type: QueryTypes.SELECT }
-    )
-    // await sequelize
-    //   .query(
-    //     `SELECT *
-    //             FROM product, category, categoryProduct
-    //            WHERE product.id = categoryProduct.categoryId and
-    //                  category.id = categoryProduct.productId
-    //           `,
-    //     { type: QueryTypes.SELECT }
-    //   )
-    .then(function (produtos) {
-      if (produtos)
+  const { userId } = req.query;
+
+  if (userId) {
+    await Budget.findAll({
+      include: [
+        {
+          model: Product,
+          as: "products",
+          required: false,
+          through: {
+            // This block of code allows you to retrieve the properties of the join table
+            model: BudgetProduct,
+            as: "budgetProduct",
+            attributes: ["quantity"],
+          },
+        },
+      ],
+      where: { userId },
+    })
+      .then(function (orcamentos) {
+        if (orcamentos)
+          return res.jsonOK({
+            data: orcamentos,
+            status: 200,
+            message: "Orçamentos encontrado com sucesso!",
+          });
+        return res.jsonError({
+          data: null,
+          status: 404,
+          message: "Não foi possível encontrar os orçamentos",
+        });
+      })
+      .catch(function (err) {
+        console.error(err, "err");
+        return res.jsonError({
+          data: err,
+          status: 400,
+          message: "Erro ao tentar encontrar os orçamentos",
+        });
+      });
+  }
+
+  await Budget.findAll({
+    include: [
+      {
+        model: Product,
+        as: "products",
+        required: false,
+        through: {
+          // This block of code allows you to retrieve the properties of the join table
+          model: BudgetProduct,
+          as: "budgetProduct",
+          attributes: ["quantity"],
+        },
+      },
+    ],
+  })
+    .then(function (orcamentos) {
+      if (orcamentos)
         return res.jsonOK({
-          data: produtos,
+          data: orcamentos,
           status: 200,
-          message: "Produtos encontrado com sucesso!",
+          message: "Orçamentos encontrado com sucesso!",
         });
       return res.jsonError({
         data: null,
         status: 404,
-        message: "Não foi possível encontrar os produtos",
+        message: "Não foi possível encontrar os orçamentos",
       });
     })
     .catch(function (err) {
@@ -79,34 +128,41 @@ router.get("/", async (req, res) => {
       return res.jsonError({
         data: err,
         status: 400,
-        message: "Erro ao tentar encontrar os produtos",
+        message: "Erro ao tentar encontrar os orçamentos",
       });
     });
 });
 
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
-  const { name } = req.query;
 
-  await sequelize
-    .query(
-      "SELECT * FROM product, category, categoryProduct WHERE product.id = categoryProduct.categoryId and category.id = categoryProduct.productId and product.id = :id",
+  await Budget.findAll({
+    include: [
       {
-        replacements: { id },
-        type: QueryTypes.SELECT,
-      }
-    )
-    .then(function (produto) {
-      if (produto)
+        model: Product,
+        as: "products",
+        required: false,
+        through: {
+          // This block of code allows you to retrieve the properties of the join table
+          model: BudgetProduct,
+          as: "budgetProduct",
+          attributes: ["quantity"],
+        },
+      },
+    ],
+    where: { id },
+  })
+    .then(function (orcamentos) {
+      if (orcamentos)
         return res.jsonOK({
-          data: produto,
+          data: orcamentos,
           status: 200,
-          message: "Produto encontrado com sucesso!",
+          message: "Orçamentos encontrado com sucesso!",
         });
       return res.jsonError({
         data: null,
         status: 404,
-        message: "Não foi possível encontrar o produto",
+        message: "Não foi possível encontrar os orçamentos",
       });
     })
     .catch(function (err) {
@@ -114,110 +170,105 @@ router.get("/:id", async (req, res) => {
       return res.jsonError({
         data: err,
         status: 400,
-        message: "Erro ao encontrar o produto",
+        message: "Erro ao tentar encontrar os orçamentos",
       });
     });
 });
 
 router.put("/:id", async (req, res) => {
-  const { name, description, price, idFabricante, idCategoria } = req.body;
   const { id } = req.params;
+  const {
+    expirationDate,
+    paymentMethod,
+    status,
+    userId,
+    products,
+    userVehicleId,
+  } = req.body;
 
-  await sequelize
-    .query(
-      "SELECT product.*, category.* FROM product, category, categoryProduct WHERE product.id = categoryProduct.categoryId and category.id = categoryProduct.productId and product.id = :id",
-      {
-        replacements: { id },
-        type: QueryTypes.SELECT,
+  const budget = await Budget.findByPk(id);
+
+  const allProducts = await budget.getProducts();
+  budget.removeProducts(allProducts);
+
+  if (products) {
+    const promisesProducts = products.map(async (item) => {
+      const po = {
+        budgetId: id,
+        productId: item.productId,
+        quantity: item.quantity,
+      };
+
+      await BudgetProduct.create(po, { w: 1 }, { returning: true });
+
+      try {
+        await Promise.all(promisesProducts);
+      } catch (err) {
+        console.log(err, "errrrr");
       }
-    )
-    .then(async function (produto) {
-      if (produto) {
-        await Product.update(
-          { name, description, price, idFabricante, idCategoria },
-          {
-            where: { id: produto[0].id },
-            returning: true,
-            plain: true,
-          }
-        )
-          .then(function (produtoAtualizado) {
-            return res.jsonOK({
-              data: produtoAtualizado,
-              status: 200,
-              message: "Produto atualizado com sucesso!",
-            });
-          })
-          .catch(function (err) {
-            return res.jsonError({
-              data: err,
-              status: 400,
-              message: "Não foi possível atualizar",
-            });
-          });
-      }
-      return res.jsonError({
-        data: null,
-        status: 404,
-        message: "Não foi possível encontrar o produto",
-      });
-    })
-    .catch(function (err) {
-      console.log(err);
-      return res.jsonError({
-        data: err,
-        status: 400,
-        message: "Erro ao encontrar o produto",
-      });
     });
+  }
+
+  const updatedBudget = await Budget.update(
+    {
+      expirationDate: expirationDate || new Date(),
+      paymentMethod,
+      status,
+      userId,
+      userVehicleId,
+    },
+    { where: { id } }
+  );
+
+  if (!updatedBudget) {
+    return res.jsonError({
+      data: null,
+      status: 400,
+      message: "Erro ao atualizar o orçamento",
+    });
+  }
+
+  return res.jsonOK({
+    data: updatedBudget,
+    status: 200,
+    message: "Orçamento atualizado com sucesso!",
+  });
 });
 
 router.delete("/:id", async (req, res) => {
   const { name } = req.body;
   const { id } = req.params;
 
-  await sequelize
-    .query(
-      "SELECT product.*, category.* FROM product, category, categoryProduct WHERE product.id = categoryProduct.categoryId and category.id = categoryProduct.productId and product.id = :id",
-      {
-        replacements: { id },
-        type: QueryTypes.SELECT,
-      }
-    )
-    .then(async function (produto) {
-      if (produto) {
-        await Product.destroy({
-          where: { id: produto.dataValues.id },
-        })
-          .then(function (produtoAtualizado) {
-            return res.jsonOK({
-              data: produtoAtualizado,
-              status: 200,
-              message: "Produto excluído com sucesso!",
-            });
-          })
-          .catch(function (err) {
-            return res.jsonError({
-              data: err,
-              status: 400,
-              message: "Não foi possível atualizar",
-            });
-          });
-      }
+  const budget = await Budget.findByPk(id);
 
-      return res.jsonError({
-        data: null,
-        status: 404,
-        message: "Não foi possível encontrar o produto",
-      });
-    })
-    .catch(function (err) {
-      return res.jsonError({
-        data: err,
-        status: 400,
-        message: "Erro ao encontrar o produto",
-      });
+  if (!budget) {
+    return res.jsonError({
+      data: null,
+      status: 404,
+      message: "Não foi possível encontrar o orçamento",
     });
+  }
+
+  const deletedOrder = await Budget.update(
+    {
+      status: "Cancelado",
+    },
+    { where: { id } }
+  );
+
+  if (deletedOrder) {
+    return res.jsonOK({
+      data: deletedOrder,
+      status: 200,
+      message: "Orçamento deletado com sucesso!",
+    });
+  }
+
+  return res.jsonError({
+    data: null,
+    status: 400,
+    message: "Erro ao deletar o orçamento",
+  });
 });
 
 module.exports = router;

@@ -15,9 +15,10 @@ router.post("/", async (req, res) => {
     description,
     price,
     brandId,
+    categoryId,
   })
-    .then(async function (novoProduto) {
-      await novoProduto.setCategory([categoryId]);
+    .then(function (novoProduto) {
+      novoProduto.setCategory([categoryId]);
       return res.jsonOK({
         data: novoProduto,
         status: 201,
@@ -35,22 +36,37 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/", async (req, res) => {
-  await sequelize
-    .query(
-      `SELECT * 
-              FROM product
-            `,
-      { type: QueryTypes.SELECT }
-    )
-    // await sequelize
-    //   .query(
-    //     `SELECT *
-    //             FROM product, category, categoryProduct
-    //            WHERE product.id = categoryProduct.categoryId and
-    //                  category.id = categoryProduct.productId
-    //           `,
-    //     { type: QueryTypes.SELECT }
-    //   )
+  const { brandId, categoryId } = req.query;
+  if (brandId && categoryId) {
+    await Product.findAll({
+      where: {
+        brandId,
+        categoryId,
+      },
+    })
+      .then(function (produtos) {
+        if (produtos)
+          return res.jsonOK({
+            data: produtos,
+            status: 200,
+            message: "Produtos encontrado com sucesso!",
+          });
+        return res.jsonError({
+          data: null,
+          status: 404,
+          message: "Não foi possível encontrar os produtos",
+        });
+      })
+      .catch(function (err) {
+        console.log(err, "err");
+        return res.jsonError({
+          data: err,
+          status: 400,
+          message: "Erro ao tentar encontrar os produtos",
+        });
+      });
+  }
+  await Product.findAll()
     .then(function (produtos) {
       if (produtos)
         return res.jsonOK({
@@ -78,14 +94,7 @@ router.get("/:id", async (req, res) => {
   const { id } = req.params;
   const { name } = req.query;
 
-  await sequelize
-    .query(
-      "SELECT * FROM product, category, categoryProduct WHERE product.id = categoryProduct.categoryId and category.id = categoryProduct.productId and product.id = :id",
-      {
-        replacements: { id },
-        type: QueryTypes.SELECT,
-      }
-    )
+  await Product.findByPk(id)
     .then(function (produto) {
       if (produto)
         return res.jsonOK({
@@ -113,20 +122,14 @@ router.put("/:id", async (req, res) => {
   const { name, description, price, idFabricante, idCategoria } = req.body;
   const { id } = req.params;
 
-  await sequelize
-    .query(
-      "SELECT product.*, category.* FROM product, category, categoryProduct WHERE product.id = categoryProduct.categoryId and category.id = categoryProduct.productId and product.id = :id",
-      {
-        replacements: { id },
-        type: QueryTypes.SELECT,
-      }
-    )
+  await Product.findByPk(id)
     .then(async function (produto) {
+      console.log(produto, "produto");
       if (produto) {
         await Product.update(
           { name, description, price, idFabricante, idCategoria },
           {
-            where: { id: produto[0].id },
+            where: { id: produto.dataValues.id },
             returning: true,
             plain: true,
           }
@@ -166,14 +169,7 @@ router.delete("/:id", async (req, res) => {
   const { name } = req.body;
   const { id } = req.params;
 
-  await sequelize
-    .query(
-      "SELECT product.*, category.* FROM product, category, categoryProduct WHERE product.id = categoryProduct.categoryId and category.id = categoryProduct.productId and product.id = :id",
-      {
-        replacements: { id },
-        type: QueryTypes.SELECT,
-      }
-    )
+  await Product.findByPk(id)
     .then(async function (produto) {
       if (produto) {
         await Product.destroy({

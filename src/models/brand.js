@@ -1,3 +1,13 @@
+/**
+ * @swagger
+ * definitions:
+ *   Brand:
+ *     type: object
+ *     properties:
+ *       name:
+ *         type: string
+ */
+
 module.exports = (sequelize, DataTypes) => {
   const Brand = sequelize.define(
     "Brand",

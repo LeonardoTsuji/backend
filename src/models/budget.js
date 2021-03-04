@@ -10,10 +10,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         type: DataTypes.STRING,
       },
-      amount: {
-        allowNull: false,
-        type: DataTypes.DOUBLE,
-      },
       status: {
         allowNull: false,
         type: DataTypes.STRING,
@@ -30,6 +26,9 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         type: DataTypes.INTEGER,
       },
+      userVehicleId: {
+        type: DataTypes.INTEGER,
+      },
     },
     {
       tableName: "budget",
@@ -39,15 +38,18 @@ module.exports = (sequelize, DataTypes) => {
   //Relacionamentos
   Budget.associate = (models) => {
     Budget.belongsToMany(models.Product, {
-      foreignKey: "productId",
-      constraint: true,
-      otherKey: "budgetId",
       through: "budgetProduct",
       as: "products",
+      foreignKey: "budgetId",
+      otherKey: "productId",
     });
     Budget.belongsTo(models.User, {
       foreignKey: "userId",
       as: "user",
+    });
+    Budget.belongsTo(models.Vehicle, {
+      foreignKey: "userVehicleId",
+      as: "vehicle",
     });
   };
   return Budget;

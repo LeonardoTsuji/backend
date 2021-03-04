@@ -23,6 +23,14 @@ module.exports = (sequelize, DataTypes) => {
           key: "id",
         },
       },
+      categoryId: {
+        allowNull: false,
+        type: DataTypes.INTEGER,
+        references: {
+          model: "Category",
+          key: "id",
+        },
+      },
     },
     {
       tableName: "product",
@@ -37,17 +45,13 @@ module.exports = (sequelize, DataTypes) => {
       as: "brand",
     });
     Product.belongsToMany(models.Budget, {
-      foreignKey: "budgetId",
-      as: "budget",
-      constraint: true,
-      otherKey: "productId",
       through: "budgetProduct",
-    });
-    Product.belongsToMany(models.Category, {
+      as: "budget",
       foreignKey: "productId",
-      constraint: true,
-      otherKey: "categoryId",
-      through: "categoryProduct",
+      otherKey: "budgetId",
+    });
+    Product.belongsTo(models.Category, {
+      foreignKey: "categoryId",
       as: "category",
     });
   };

@@ -11,6 +11,10 @@ module.exports = {
           primaryKey: true,
           type: DataTypes.INTEGER,
         },
+        quantity: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+        },
         budgetId: {
           type: DataTypes.INTEGER,
           allowNull: false,
@@ -26,6 +30,14 @@ module.exports = {
             model: "Product",
             key: "id",
           },
+        },
+        createdAt: {
+          allowNull: false,
+          type: DataTypes.DATE,
+        },
+        updatedAt: {
+          allowNull: false,
+          type: DataTypes.DATE,
         },
       },
       {

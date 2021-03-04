@@ -1,34 +1,36 @@
 const express = require("express");
 
-const { Category } = require("../models");
+const { Resource, Role } = require("../models");
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
   const { name } = req.body;
 
-  await Category.findOne({ where: { name } })
-    .then(async function (categoria) {
-      if (categoria)
+  await Resource.findOne({ where: { name } })
+    .then(async function (resource) {
+      if (resource)
         return res.jsonError({
           data: null,
           status: 400,
-          message: "Categoria já cadastrado",
+          message: "Recurso já cadastrado",
         });
 
-      await Category.create({ name })
-        .then(function (novoProduto) {
+      await Resource.create({
+        name,
+      })
+        .then(function (newResource) {
           return res.jsonOK({
-            data: novoProduto,
+            data: newResource,
             status: 201,
-            message: "Categoria cadastrado com sucesso!",
+            message: "Cadastro do recurso efetuado com sucesso!",
           });
         })
         .catch(function (err) {
           return res.jsonError({
             status: 400,
             data: err,
-            message: "Não foi possível cadastrar o categoria",
+            message: "Não foi possível criar o recurso",
           });
         });
     })
@@ -36,31 +38,38 @@ router.post("/", async (req, res) => {
       return res.jsonError({
         status: 400,
         data: err,
-        message: "Erro ao cadastrar o categoria",
+        message: "Erro ao criar o recurso",
       });
     });
 });
 
 router.get("/", async (req, res) => {
-  await Category.findAll()
-    .then(function (categorias) {
-      if (categorias)
+  await Resource.findAll({
+    include: [
+      {
+        model: Role,
+        as: "role",
+      },
+    ],
+  })
+    .then(function (resources) {
+      if (resources)
         return res.jsonOK({
-          data: categorias,
+          data: resources,
           status: 200,
-          message: "Categorias encontrado com sucesso!",
+          message: "Recursos encontrados com sucesso!",
         });
       return res.jsonError({
         data: null,
         status: 404,
-        message: "Não foi possível encontrar os categorias",
+        message: "Não foi possível encontrar os recursos",
       });
     })
     .catch(function (err) {
       return res.jsonError({
         data: err,
         status: 400,
-        message: "Erro ao tentar encontrar os categorias",
+        message: "Erro ao tentar encontrar o recurso",
       });
     });
 });
@@ -68,49 +77,49 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
 
-  await Category.findByPk(id)
-    .then(function (categoria) {
-      if (categoria)
+  await Resource.findByPk(id)
+    .then(function (resource) {
+      if (resource)
         return res.jsonOK({
-          data: categoria,
+          data: resource,
           status: 200,
-          message: "Categoria encontrado com sucesso!",
+          message: "Recurso encontrada com sucesso!",
         });
       return res.jsonError({
         data: null,
         status: 404,
-        message: "Não foi possível encontrar o categoria",
+        message: "Não foi possível encontrar o recurso",
       });
     })
     .catch(function (err) {
       return res.jsonError({
         data: {},
         status: 400,
-        message: "Erro ao encontrar o categoria",
+        message: "Erro ao encontrar o recurso",
       });
     });
 });
 
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { name } = req.body;
+  const { name, description } = req.body;
 
-  await Category.findByPk(id)
-    .then(async function (categoria) {
-      if (categoria) {
-        await Category.update(
-          { name },
+  await Resource.findByPk(id)
+    .then(async function (resource) {
+      if (resource) {
+        await Resource.update(
+          { name, description },
           {
-            where: { id: categoria.dataValues.id },
+            where: { id: resource.dataValues.id },
             returning: true,
             plain: true,
           }
         )
-          .then(function (categoriaAtualizada) {
+          .then(function (updatedResource) {
             return res.jsonOK({
-              data: categoriaAtualizada,
+              data: updatedResource,
               status: 200,
-              message: "Categoria atualizado com sucesso!",
+              message: "Recurso atualizado com sucesso!",
             });
           })
           .catch(function (err) {
@@ -123,11 +132,10 @@ router.put("/:id", async (req, res) => {
       }
     })
     .catch(function (err) {
-      console.log(err);
-      return res.jsonError({
-        data: err,
+      return err.jsonError({
+        data: null,
         status: 404,
-        message: "Não foi possível encontrar o categoria",
+        message: "Não foi possível encontrar o recurso",
       });
     });
 });
@@ -135,17 +143,18 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
-  await Category.findByPk(id)
-    .then(async function (categoria) {
-      if (categoria) {
-        await Category.destroy({
-          where: { id: categoria.dataValues.id },
+  await Resource.findByPk(id)
+    .then(async function (resource) {
+      console.log(resource);
+      if (resource) {
+        await Resource.destroy({
+          where: { id: resource.dataValues.id },
         })
-          .then(function (categoriaAtualizada) {
+          .then(function (updatedResource) {
             return res.jsonOK({
-              data: categoriaAtualizada,
+              data: updatedResource,
               status: 200,
-              message: "Categoria excluído com sucesso!",
+              message: "Recurso excluído com sucesso!",
             });
           })
           .catch(function (err) {
@@ -160,14 +169,14 @@ router.delete("/:id", async (req, res) => {
       return res.jsonError({
         data: null,
         status: 404,
-        message: "Não foi possível encontrar o categoria",
+        message: "Não foi possível encontrar o recurso",
       });
     })
     .catch(function (err) {
       return res.jsonError({
         data: err,
         status: 400,
-        message: "Erro ao encontrar o categoria",
+        message: "Erro ao encontrar o recurso",
       });
     });
 });

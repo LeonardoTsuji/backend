@@ -24,6 +24,14 @@ module.exports = {
           allowNull: false,
           type: DataTypes.DOUBLE,
         },
+        categoryId: {
+          allowNull: false,
+          type: DataTypes.INTEGER,
+          references: {
+            model: "Category",
+            key: "id",
+          },
+        },
         brandId: {
           allowNull: false,
           type: DataTypes.INTEGER,

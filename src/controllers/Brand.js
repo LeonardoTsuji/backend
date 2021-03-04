@@ -3,6 +3,26 @@ const express = require("express");
 const { Brand } = require("../models");
 
 const router = express.Router();
+/**
+ * @swagger
+ * /api/puppies:
+ *   post:
+ *     tags:
+ *       - Puppies
+ *     description: Creates a new puppy
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: puppy
+ *         description: Puppy object
+ *         in: body
+ *         required: true
+ *         schema:
+ *           $ref: '#/definitions/Puppy'
+ *     responses:
+ *       200:
+ *         description: Successfully created
+ */
 
 router.post("/", async (req, res) => {
   const { name } = req.body;
@@ -17,9 +37,9 @@ router.post("/", async (req, res) => {
         });
 
       await Brand.create({ name })
-        .then(function (novoProduto) {
+        .then(function (novoFabricante) {
           return res.jsonOK({
-            data: novoProduto,
+            data: novoFabricante,
             status: 201,
             message: "Fabricante cadastrado com sucesso!",
           });
@@ -68,7 +88,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
 
-  await Brand.findOne({ where: { id }, include: "produtos" })
+  await Brand.findOne({ where: { id }, include: "products" })
     .then(function (fabricante) {
       if (fabricante)
         return res.jsonOK({
@@ -83,6 +103,7 @@ router.get("/:id", async (req, res) => {
       });
     })
     .catch(function (err) {
+      console.log(err, "err");
       return res.jsonError({
         data: {},
         status: 400,

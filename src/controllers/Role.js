@@ -1,13 +1,13 @@
 const express = require("express");
 
-const { Role, RoleUser } = require("../models");
+const { Role, Resource, ResourceRole } = require("../models");
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
-  const { description } = req.body;
+  const { name, description } = req.body;
 
-  await Role.findOne({ where: { description } })
+  await Role.findOne({ where: { name } })
     .then(async function (account) {
       if (account)
         return res.jsonError({
@@ -17,6 +17,7 @@ router.post("/", async (req, res) => {
         });
 
       await Role.create({
+        name,
         description,
       })
         .then(function (newUsuario) {
@@ -44,7 +45,41 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/", async (req, res) => {
-  await Role.findAll()
+  const { name } = req.query;
+
+  if (name) {
+    await Role.findOne({ where: { name } })
+      .then(function (role) {
+        if (role)
+          return res.jsonOK({
+            data: role,
+            status: 200,
+            message: "Regra encontrada com sucesso!",
+          });
+        return res.jsonError({
+          data: null,
+          status: 404,
+          message: "Não foi possível encontrar a regra",
+        });
+      })
+      .catch(function (err) {
+        return res.jsonError({
+          data: {},
+          status: 400,
+          message: "Erro ao encontrar a regra",
+        });
+      });
+  }
+
+  await Role.findAll({
+    include: [
+      {
+        model: Resource,
+        as: "resource",
+        required: false,
+      },
+    ],
+  })
     .then(function (roles) {
       if (roles)
         return res.jsonOK({
@@ -59,6 +94,7 @@ router.get("/", async (req, res) => {
       });
     })
     .catch(function (err) {
+      console.log(err);
       return res.jsonError({
         data: err,
         status: 400,
@@ -69,9 +105,8 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
-  const { description } = req.query;
 
-  await Role.findOne({ where: { description } })
+  await Role.findByPk(id)
     .then(function (role) {
       if (role)
         return res.jsonOK({
@@ -95,13 +130,14 @@ router.get("/:id", async (req, res) => {
 });
 
 router.put("/:id", async (req, res) => {
-  const { description } = req.body;
+  const { id } = req.params;
+  const { name, description } = req.body;
 
-  await Role.findOne({ where: { description } })
+  await Role.findByPk(id)
     .then(async function (role) {
       if (role) {
         await Role.update(
-          { description },
+          { name, description },
           {
             where: { id: role.dataValues.id },
             returning: true,
@@ -134,9 +170,9 @@ router.put("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const { description } = req.body;
+  const { id } = req.params;
 
-  await Role.findOne({ where: { description } })
+  await Role.findByPk(id)
     .then(async function (role) {
       console.log(role);
       if (role) {

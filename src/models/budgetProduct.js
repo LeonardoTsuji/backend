@@ -14,9 +14,13 @@ module.exports = (sequelize, DataTypes) => {
       },
       productId: {
         type: DataTypes.INTEGER,
+        references: "Product",
+        referencesKey: "id",
       },
       budgetId: {
         type: DataTypes.INTEGER,
+        references: "Budget",
+        referencesKey: "id",
       },
     },
     {

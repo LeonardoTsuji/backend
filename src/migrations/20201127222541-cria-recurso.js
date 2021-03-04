@@ -3,7 +3,7 @@
 module.exports = {
   up: async (queryInterface, DataTypes) => {
     return queryInterface.createTable(
-      "roleUser",
+      "resource",
       {
         id: {
           allowNull: false,
@@ -11,30 +11,27 @@ module.exports = {
           primaryKey: true,
           type: DataTypes.INTEGER,
         },
-        userId: {
-          type: DataTypes.INTEGER,
+        name: {
           allowNull: false,
-          references: {
-            model: "User",
-            key: "id",
-          },
+          type: DataTypes.STRING,
+          unique: true,
         },
-        roleId: {
-          type: DataTypes.INTEGER,
+        createdAt: {
           allowNull: false,
-          references: {
-            model: "Role",
-            key: "id",
-          },
+          type: DataTypes.DATE,
+        },
+        updatedAt: {
+          allowNull: false,
+          type: DataTypes.DATE,
         },
       },
       {
-        tableName: "roleUser",
+        tableName: "resource",
       }
     );
   },
 
   down: async (queryInterface, Sequelize) => {
-    return queryInterface.dropTable("roleUser");
+    return queryInterface.dropTable("resource");
   },
 };

@@ -11,10 +11,14 @@ module.exports = {
           primaryKey: true,
           type: DataTypes.INTEGER,
         },
-        description: {
+        name: {
           allowNull: false,
           type: DataTypes.STRING,
           unique: true,
+        },
+        description: {
+          allowNull: false,
+          type: DataTypes.STRING,
         },
         createdAt: {
           allowNull: false,

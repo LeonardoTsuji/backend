@@ -23,11 +23,18 @@ module.exports = {
         phone: {
           allowNull: false,
           type: DataTypes.STRING,
-          unique: true,
         },
         password: {
           allowNull: false,
           type: DataTypes.STRING,
+        },
+        roleId: {
+          allowNull: false,
+          type: DataTypes.INTEGER,
+          references: {
+            model: "Role",
+            key: "id",
+          },
         },
         createdAt: {
           allowNull: false,

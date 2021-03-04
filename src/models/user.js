@@ -25,5 +25,19 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
+  //Relacionamentos
+  User.associate = (models) => {
+    User.hasMany(models.Budget, {
+      as: "budget",
+    });
+    User.belongsTo(models.Role, {
+      foreignKey: "roleId",
+      as: "role",
+    });
+    User.hasMany(models.Vehicle, {
+      as: "vehicle",
+    });
+  };
+
   return User;
 };
