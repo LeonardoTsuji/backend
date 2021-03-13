@@ -162,7 +162,6 @@ router.delete("/:id", async (req, res) => {
 
   await Brand.findOne({ where: { id } })
     .then(async function (fabricante) {
-      console.log(fabricante);
       if (fabricante) {
         await Brand.destroy({
           where: { id: fabricante.dataValues.id },

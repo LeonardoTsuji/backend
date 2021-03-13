@@ -26,6 +26,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         type: DataTypes.INTEGER,
       },
+      vehicleId: {
+        allowNull: false,
+        type: DataTypes.INTEGER,
+      },
     },
     {
       tableName: "schedule",
@@ -37,6 +41,14 @@ module.exports = (sequelize, DataTypes) => {
     Schedule.belongsTo(models.User, {
       foreignKey: "userId",
       as: "user",
+    });
+    Schedule.belongsTo(models.Vehicle, {
+      foreignKey: "vehicleId",
+      as: "vehicle",
+    });
+    Schedule.hasMany(models.Budget, {
+      foreignKey: "id",
+      as: "budget",
     });
   };
 

@@ -124,7 +124,6 @@ router.put("/:id", async (req, res) => {
 
   await Product.findByPk(id)
     .then(async function (produto) {
-      console.log(produto, "produto");
       if (produto) {
         await Product.update(
           { name, description, price, idFabricante, idCategoria },

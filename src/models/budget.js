@@ -27,6 +27,12 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
       },
       userVehicleId: {
+        allowNull: false,
+        type: DataTypes.INTEGER,
+      },
+      scheduleId: {
+        allowNull: false,
+        unique: true,
         type: DataTypes.INTEGER,
       },
     },
@@ -50,6 +56,10 @@ module.exports = (sequelize, DataTypes) => {
     Budget.belongsTo(models.Vehicle, {
       foreignKey: "userVehicleId",
       as: "vehicle",
+    });
+    Budget.belongsTo(models.Schedule, {
+      foreignKey: "scheduleId",
+      as: "schedule",
     });
   };
   return Budget;

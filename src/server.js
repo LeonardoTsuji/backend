@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 
@@ -26,7 +27,7 @@ var options = {
   // import swaggerDefinitions
   swaggerDefinition,
   // path to the API docs
-  apis: ["./routes/*.js"],
+  apis: ["./controllers/*.js"],
 };
 
 // initialize swagger-jsdoc
@@ -46,12 +47,16 @@ const auth = require("./controllers/Auth");
 const fabricante = require("./controllers/Brand");
 const categoria = require("./controllers/Category");
 const produto = require("./controllers/Product");
+const modelo = require("./controllers/Model");
 const servicoMecanico = require("./controllers/MechanicalService");
 const orcamento = require("./controllers/Budget");
 const agenda = require("./controllers/Schedule");
+const sendMail = require("./controllers/SendMail");
+const ordemServico = require("./controllers/ServiceOrder");
 
 //Middlewares
 app.use(cors());
+app.use(helmet());
 app.use(response);
 
 app.use(express.json());
@@ -66,9 +71,12 @@ app.use("/vinculo", vinculo);
 app.use("/fabricante", fabricante);
 app.use("/categoria", categoria);
 app.use("/produto", produto);
+app.use("/modelo-veiculo", modelo);
 app.use("/servico-mecanico", servicoMecanico);
 app.use("/orcamento", orcamento);
 app.use("/agenda", agenda);
+app.use("/email", sendMail);
+app.use("/ordem-servico", ordemServico);
 app.get("/swagger.json", function (req, res) {
   res.setHeader("Content-Type", "application/json");
   res.send(swaggerSpec);

@@ -37,6 +37,9 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.Vehicle, {
       as: "vehicle",
     });
+    User.hasMany(models.ServiceOrder, {
+      as: "serviceOrder",
+    });
   };
 
   return User;

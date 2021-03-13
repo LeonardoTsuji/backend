@@ -3,7 +3,7 @@
 module.exports = {
   up: async (queryInterface, DataTypes) => {
     return queryInterface.createTable(
-      "budget",
+      "schedule",
       {
         id: {
           allowNull: false,
@@ -11,13 +11,13 @@ module.exports = {
           primaryKey: true,
           type: DataTypes.INTEGER,
         },
-        expirationDate: {
-          allowNull: false,
-          type: DataTypes.DATE,
-        },
-        paymentMethod: {
+        dateSchedule: {
           allowNull: false,
           type: DataTypes.STRING,
+        },
+        hourSchedule: {
+          allowNull: false,
+          type: DataTypes.TIME,
         },
         status: {
           allowNull: false,
@@ -31,20 +31,11 @@ module.exports = {
             key: "id",
           },
         },
-        userVehicleId: {
+        vehicleId: {
           allowNull: false,
           type: DataTypes.INTEGER,
           references: {
             model: "Vehicle",
-            key: "id",
-          },
-        },
-        scheduleId: {
-          allowNull: false,
-          unique: true,
-          type: DataTypes.INTEGER,
-          references: {
-            model: "Schedule",
             key: "id",
           },
         },
@@ -58,12 +49,12 @@ module.exports = {
         },
       },
       {
-        tableName: "budget",
+        tableName: "schedule",
       }
     );
   },
 
   down: async (queryInterface, Sequelize) => {
-    return queryInterface.dropTable("budget");
+    return queryInterface.dropTable("schedule");
   },
 };

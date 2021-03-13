@@ -2,14 +2,9 @@ module.exports = (sequelize, DataTypes) => {
   const Vehicle = sequelize.define(
     "Vehicle",
     {
-      model: {
-        allowNull: false,
-        type: DataTypes.STRING,
-      },
       plate: {
         allowNull: true,
         type: DataTypes.STRING,
-        unique: true,
       },
       color: {
         allowNull: true,
@@ -39,6 +34,14 @@ module.exports = (sequelize, DataTypes) => {
           key: "id",
         },
       },
+      modelId: {
+        allowNull: false,
+        type: DataTypes.INTEGER,
+        references: {
+          model: "Model",
+          key: "id",
+        },
+      },
     },
     {
       tableName: "vehicle",
@@ -59,6 +62,14 @@ module.exports = (sequelize, DataTypes) => {
     Vehicle.hasMany(models.Budget, {
       as: "budget",
       foreignKey: "userVehicleId",
+    });
+    Vehicle.hasMany(models.Schedule, {
+      as: "schedule",
+      foreignKey: "id",
+    });
+    Vehicle.belongsTo(models.Model, {
+      foreignKey: "modelId",
+      as: "model",
     });
   };
   return Vehicle;

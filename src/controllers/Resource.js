@@ -145,7 +145,6 @@ router.delete("/:id", async (req, res) => {
 
   await Resource.findByPk(id)
     .then(async function (resource) {
-      console.log(resource);
       if (resource) {
         await Resource.destroy({
           where: { id: resource.dataValues.id },

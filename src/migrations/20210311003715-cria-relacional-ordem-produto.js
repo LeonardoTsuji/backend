@@ -3,7 +3,7 @@
 module.exports = {
   up: async (queryInterface, DataTypes) => {
     return queryInterface.createTable(
-      "schedule",
+      "serviceOrderProduct",
       {
         id: {
           allowNull: false,
@@ -11,23 +11,23 @@ module.exports = {
           primaryKey: true,
           type: DataTypes.INTEGER,
         },
-        dateSchedule: {
-          allowNull: false,
-          type: DataTypes.STRING,
-        },
-        hourSchedule: {
-          allowNull: false,
-          type: DataTypes.TIME,
-        },
-        status: {
-          allowNull: false,
-          type: DataTypes.STRING,
-        },
-        userId: {
-          allowNull: false,
+        quantity: {
           type: DataTypes.INTEGER,
+          allowNull: false,
+        },
+        serviceOrderId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
           references: {
-            model: "User",
+            model: "ServiceOrder",
+            key: "id",
+          },
+        },
+        productId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          references: {
+            model: "Product",
             key: "id",
           },
         },
@@ -41,12 +41,12 @@ module.exports = {
         },
       },
       {
-        tableName: "schedule",
+        tableName: "serviceOrderProduct",
       }
     );
   },
 
   down: async (queryInterface, Sequelize) => {
-    return queryInterface.dropTable("schedule");
+    return queryInterface.dropTable("serviceOrderProduct");
   },
 };

@@ -4,37 +4,29 @@ const Op = Sequelize.Op; // biblioteca de operadores
 const express = require("express");
 const router = express.Router();
 
-const { Budget, Product, BudgetProduct } = require("../models");
+const { ServiceOrder, Product, ServiceOrderProduct } = require("../models");
 
 router.post("/", async (req, res) => {
   const {
-    expirationDate,
+    paid,
+    done,
+    notes,
     paymentMethod,
-    status,
+    paymentDate,
     userId,
-    products,
     userVehicleId,
-    scheduleId,
+    products,
   } = req.body;
 
-  let savedBudget = null;
-
-  try {
-    savedBudget = await Budget.create({
-      expirationDate: expirationDate || new Date(),
-      paymentMethod,
-      status,
-      userId,
-      userVehicleId,
-      scheduleId,
-    });
-  } catch (err) {
-    return res.jsonError({
-      data: err,
-      status: 400,
-      message: "Erro ao cadastrar o orçamentos",
-    });
-  }
+  const savedServiceOrder = await ServiceOrder.create({
+    paid,
+    done,
+    notes,
+    paymentMethod,
+    paymentDate,
+    userId,
+    userVehicleId,
+  });
 
   if (products) {
     const promisesProducts = products.map(async (item) => {
@@ -49,29 +41,29 @@ router.post("/", async (req, res) => {
       }
 
       const po = {
-        budgetId: savedBudget.dataValues.id,
+        serviceOrderId: savedServiceOrder.dataValues.id,
         productId: item.productId,
         quantity: item.quantity,
       };
 
-      await BudgetProduct.create(po, { w: 1 }, { returning: true });
+      await ServiceOrderProduct.create(po, { w: 1 }, { returning: true });
     });
 
     Promise.all(await promisesProducts);
   }
 
   return res.jsonOK({
-    data: savedBudget,
+    data: savedServiceOrder,
     status: 201,
-    message: "Orçamento criado com sucesso!",
+    message: "Ordem de serviço criada com sucesso!",
   });
 });
 
 router.get("/", async (req, res) => {
-  const { userId, status } = req.query;
+  const { userId } = req.query;
 
-  if (userId || status) {
-    await Budget.findAll({
+  if (userId) {
+    await ServiceOrder.findAll({
       include: [
         {
           model: Product,
@@ -79,32 +71,25 @@ router.get("/", async (req, res) => {
           required: false,
           through: {
             // This block of code allows you to retrieve the properties of the join table
-            model: BudgetProduct,
-            as: "budgetProduct",
+            model: ServiceOrderProduct,
+            as: "serviceOrderProduct",
             attributes: ["quantity"],
           },
         },
       ],
-      where: {
-        [Op.and]: [
-          userId && {
-            userId,
-          },
-          status && { status },
-        ],
-      },
+      where: { userId },
     })
       .then(function (orcamentos) {
         if (orcamentos)
           return res.jsonOK({
             data: orcamentos,
             status: 200,
-            message: "Orçamentos encontrado com sucesso!",
+            message: "Ordem de serviço encontrada com sucesso!",
           });
         return res.jsonError({
           data: null,
           status: 404,
-          message: "Não foi possível encontrar os orçamentos",
+          message: "Não foi possível encontrar a ordem de serviço",
         });
       })
       .catch(function (err) {
@@ -112,12 +97,12 @@ router.get("/", async (req, res) => {
         return res.jsonError({
           data: err,
           status: 400,
-          message: "Erro ao tentar encontrar os orçamentos",
+          message: "Erro ao tentar encontrar a ordem de serviço",
         });
       });
   }
 
-  await Budget.findAll({
+  await ServiceOrder.findAll({
     include: [
       {
         model: Product,
@@ -125,8 +110,8 @@ router.get("/", async (req, res) => {
         required: false,
         through: {
           // This block of code allows you to retrieve the properties of the join table
-          model: BudgetProduct,
-          as: "budgetProduct",
+          model: ServiceOrderProduct,
+          as: "serviceOrderProduct",
           attributes: ["quantity"],
         },
       },
@@ -137,12 +122,12 @@ router.get("/", async (req, res) => {
         return res.jsonOK({
           data: orcamentos,
           status: 200,
-          message: "Orçamentos encontrado com sucesso!",
+          message: "Ordem de serviço encontrada com sucesso!",
         });
       return res.jsonError({
         data: null,
         status: 404,
-        message: "Não foi possível encontrar os orçamentos",
+        message: "Não foi possível encontrar a ordem de serviço",
       });
     })
     .catch(function (err) {
@@ -150,7 +135,7 @@ router.get("/", async (req, res) => {
       return res.jsonError({
         data: err,
         status: 400,
-        message: "Erro ao tentar encontrar os orçamentos",
+        message: "Erro ao tentar encontrar a ordem de serviço",
       });
     });
 });
@@ -158,7 +143,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
 
-  await Budget.findAll({
+  await ServiceOrder.findAll({
     include: [
       {
         model: Product,
@@ -166,8 +151,8 @@ router.get("/:id", async (req, res) => {
         required: false,
         through: {
           // This block of code allows you to retrieve the properties of the join table
-          model: BudgetProduct,
-          as: "budgetProduct",
+          model: ServiceOrderProduct,
+          as: "serviceOrderProduct",
           attributes: ["quantity"],
         },
       },
@@ -179,12 +164,12 @@ router.get("/:id", async (req, res) => {
         return res.jsonOK({
           data: orcamentos,
           status: 200,
-          message: "Orçamentos encontrado com sucesso!",
+          message: "Ordem de serviço encontrada com sucesso!",
         });
       return res.jsonError({
         data: null,
         status: 404,
-        message: "Não foi possível encontrar os orçamentos",
+        message: "Não foi possível encontrar a ordem de serviço",
       });
     })
     .catch(function (err) {
@@ -192,7 +177,7 @@ router.get("/:id", async (req, res) => {
       return res.jsonError({
         data: err,
         status: 400,
-        message: "Erro ao tentar encontrar os orçamentos",
+        message: "Erro ao tentar encontrar a ordem de serviço",
       });
     });
 });
@@ -200,89 +185,88 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const {
-    expirationDate,
+    paid,
+    done,
+    notes,
+    paymentDate,
     paymentMethod,
-    status,
     userId,
-    products,
     userVehicleId,
+    products,
   } = req.body;
 
-  const budget = await Budget.findByPk(id);
+  const serviceOrder = await ServiceOrder.findByPk(id);
 
-  if (!budget)
+  if (!serviceOrder)
     return res.jsonError({
       data: null,
       status: 404,
-      message: "Não foi possível encontrar o orçamento",
+      message: "Não foi possível encontrar a ordem de serviço",
     });
 
-  const allProducts = await budget.getProducts();
-  budget.removeProducts(allProducts);
+  const allProducts = await serviceOrder.getProducts();
+  serviceOrder.removeProducts(allProducts);
 
   if (products) {
     const promisesProducts = products.map(async (item) => {
       const po = {
-        budgetId: id,
+        serviceOrderId: id,
         productId: item.productId,
         quantity: item.quantity,
       };
 
-      await BudgetProduct.create(po, { w: 1 }, { returning: true });
+      await ServiceOrderProduct.create(po, { w: 1 }, { returning: true });
 
       try {
         await Promise.all(promisesProducts);
       } catch (err) {
-        return res.jsonError({
-          data: err,
-          status: 400,
-          message: "Erro ao atualizar o orçamento",
-        });
+        console.log(err, "errrrr");
       }
     });
   }
 
-  await Budget.update(
+  const updatedServiceOrder = await ServiceOrder.update(
     {
-      expirationDate: expirationDate || new Date(),
+      paid,
+      done,
+      notes,
+      paymentDate,
       paymentMethod,
-      status,
       userId,
       userVehicleId,
     },
     { where: { id } }
-  )
-    .then(function (updatedBudget) {
-      return res.jsonOK({
-        data: updatedBudget,
-        status: 200,
-        message: "Orçamento atualizado com sucesso!",
-      });
-    })
-    .catch(function (err) {
-      return res.jsonError({
-        data: err,
-        status: 400,
-        message: "Erro ao atualizar o orçamento",
-      });
-    });
-});
+  );
 
-router.delete("/:id", async (req, res) => {
-  const { name } = req.body;
-  const { id } = req.params;
-
-  const budget = await Budget.findByPk(id);
-
-  if (!budget) {
+  if (!updatedServiceOrder) {
     return res.jsonError({
       data: null,
-      status: 404,
-      message: "Não foi possível encontrar o orçamento",
+      status: 400,
+      message: "Erro ao atualizar a ordem de serviço",
     });
   }
 
-  const deletedOrder = await Budget.update(
+  return res.jsonOK({
+    data: updatedServiceOrder,
+    status: 200,
+    message: "Ordem de serviço atualizada com sucesso!",
+  });
+});
+
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  const serviceOrder = await ServiceOrder.findByPk(id);
+
+  if (!serviceOrder) {
+    return res.jsonError({
+      data: null,
+      status: 404,
+      message: "Não foi possível encontrar a ordem de serviço",
+    });
+  }
+
+  const deletedOrder = await ServiceOrder.update(
     {
       status: "Cancelado",
     },
@@ -293,54 +277,62 @@ router.delete("/:id", async (req, res) => {
     return res.jsonOK({
       data: deletedOrder,
       status: 200,
-      message: "Orçamento deletado com sucesso!",
+      message: "Ordem de serviço deletada com sucesso!",
     });
   }
 
   return res.jsonError({
     data: null,
     status: 400,
-    message: "Erro ao deletar o orçamento",
+    message: "Erro ao deletar a ordem de serviço",
   });
 });
 
 router.get("/:id/estatistica", async (req, res) => {
-  const { status } = req.query;
+  const { paid, done } = req.query;
 
-  if (status) {
-    await Budget.count({
-      where: { status },
+  if (paid || done) {
+    await ServiceOrder.count({
+      where: {
+        [Op.and]: [
+          done && {
+            done,
+          },
+          paid && { paid },
+        ],
+      },
     })
       .then(function (orcamentos) {
         return res.jsonOK({
           data: { count: orcamentos },
           status: 200,
-          message: "Orçamentos encontrado com sucesso!",
+          message: "Ordem de serviço encontrada com sucesso!",
         });
       })
       .catch(function (err) {
+        console.error(err, "err");
         return res.jsonError({
           data: err,
           status: 400,
-          message: "Erro ao tentar encontrar os orçamentos",
+          message: "Erro ao tentar encontrar a ordem de serviço",
         });
       });
   }
 
-  await Budget.count()
+  await ServiceOrder.count()
     .then(function (orcamentos) {
       return res.jsonOK({
         data: { count: orcamentos },
         status: 200,
-        message: "Orçamentos encontrado com sucesso!",
+        message: "Ordem de serviço encontrada com sucesso!",
       });
     })
     .catch(function (err) {
-      console.log(err, "err");
+      console.error(err, "err");
       return res.jsonError({
         data: err,
         status: 400,
-        message: "Erro ao tentar encontrar os orçamentos",
+        message: "Erro ao tentar encontrar a ordem de serviço",
       });
     });
 });

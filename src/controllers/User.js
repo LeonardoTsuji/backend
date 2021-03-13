@@ -16,8 +16,10 @@ const {
   Product,
   BudgetProduct,
   Vehicle,
-  UserVehicle,
+  Schedule,
 } = require("../models");
+
+const SendEmail = require("./SendMail");
 
 const router = express.Router();
 
@@ -177,7 +179,6 @@ router.delete("/:id", async (req, res) => {
 
   await User.findOne({ where: { email } })
     .then(async function (account) {
-      console.log(account);
       if (account) {
         await User.destroy({
           where: { id: account.dataValues.id },
@@ -218,55 +219,49 @@ router.post("/:id/orcamento", async (req, res) => {
   const {
     expirationDate,
     paymentMethod,
-    amount,
     status,
     userId,
-    quantity,
-    productId,
+    products,
+    userVehicleId,
   } = req.body;
-  const { id } = req.params;
 
-  await User.findOne({
-    where: { id },
-  })
-    .then(async function (account) {
-      if (account)
-        await Budget.create({
-          expirationDate,
-          paymentMethod,
-          amount,
-          status,
-          userId,
-        })
-          .then(function (novoOrcamento) {
-            return res.jsonOK({
-              data: novoOrcamento,
-              status: 201,
-              message: "Orçamento cadastrado com sucesso!",
-            });
-          })
-          .catch(function (err) {
-            console.log(err);
-            return res.jsonError({
-              status: 400,
-              data: err,
-              message: "Não foi possível cadastrar o orçamento",
-            });
-          });
+  const savedBudget = await Budget.create({
+    expirationDate: expirationDate || new Date(),
+    paymentMethod,
+    status,
+    userId,
+    userVehicleId,
+  });
 
-      return res.jsonError({
-        data: null,
-        status: 404,
-        message: "Não foi possível encontrar o usuário",
-      });
-    })
-    .catch(function (err) {
-      return res.jsonError({
-        data: err,
-        status: 400,
-        message: "Erro ao encontrar o usuário",
-      });
+  if (products) {
+    const promisesProducts = products.map(async (item) => {
+      const product = await Product.findByPk(item.productId);
+
+      if (!product) {
+        return res.jsonError({
+          data: null,
+          status: 400,
+          message: "Erro ao tentar encontrar o produto",
+        });
+      }
+
+      const po = {
+        budgetId: savedBudget.dataValues.id,
+        productId: item.productId,
+        quantity: item.quantity,
+      };
+
+      await BudgetProduct.create(po, { w: 1 }, { returning: true });
     });
+
+    Promise.all(await promisesProducts);
+  }
+
+  return res.jsonOK({
+    data: savedBudget,
+    status: 200,
+    message: "Orçamento criado com sucesso!",
+  });
 });
 
 router.get("/:id/orcamento", async (req, res) => {
@@ -398,8 +393,9 @@ router.get("/:id/orcamento/:budgetId/valor", async (req, res) => {
     });
 });
 
+//Veículo usuário
 router.post("/:id/veiculo", async (req, res) => {
-  const { model, plate, color, year, kilometer, brandId } = req.body;
+  const { model, plate, color, year, kilometer, brandId, modelId } = req.body;
   const { id } = req.params;
 
   await User.findByPk(id)
@@ -409,9 +405,10 @@ router.post("/:id/veiculo", async (req, res) => {
         brandId,
         plate,
         color,
-        year,
+        year: Number(year),
         kilometer,
         userId: id,
+        modelId,
       })
         .then(function (novoVeiculo) {
           return res.jsonOK({
@@ -549,4 +546,137 @@ router.put("/:id/veiculo/:vehicleId", async (req, res) => {
       });
     });
 });
+
+// Agenda usuário
+router.post("/:id/agenda", async (req, res) => {
+  const { userId, dateSchedule, hourSchedule, vehicleId } = req.body;
+
+  await Schedule.create({
+    status: "ATIVO",
+    userId,
+    dateSchedule,
+    hourSchedule,
+    vehicleId,
+  })
+    .then(function (novoAgendamento) {
+      return res.jsonOK({
+        data: novoAgendamento,
+        status: 201,
+        message: "Agendamento cadastrado com sucesso!",
+      });
+    })
+    .catch(function (err) {
+      console.log(err);
+      return res.jsonError({
+        status: 400,
+        data: err,
+        message: "Não foi possível cadastrar o agendamento",
+      });
+    });
+});
+
+router.get("/:id/agenda", async (req, res) => {
+  const { id } = req.params;
+
+  await Schedule.findAll({
+    where: { userId: id },
+  })
+    .then(function (agendamento) {
+      if (agendamento)
+        return res.jsonOK({
+          data: agendamento,
+          status: 200,
+          message: "Agendamento encontrado com sucesso!",
+        });
+      return res.jsonError({
+        data: null,
+        status: 404,
+        message: "Não foi possível encontrar o agendamento",
+      });
+    })
+    .catch(function (err) {
+      console.log(err, "err");
+      return res.jsonError({
+        data: err,
+        status: 400,
+        message: "Erro ao tentar encontrar o agendamento",
+      });
+    });
+});
+
+router.get("/:id/agenda/:scheduleId", async (req, res) => {
+  const { id, scheduleId } = req.params;
+
+  await Schedule.findAll({
+    where: { id: scheduleId },
+  })
+    .then(function (agendamento) {
+      if (agendamento)
+        return res.jsonOK({
+          data: agendamento,
+          status: 200,
+          message: "Agendamento encontrado com sucesso!",
+        });
+      return res.jsonError({
+        data: null,
+        status: 404,
+        message: "Não foi possível encontrar o agendamento",
+      });
+    })
+    .catch(function (err) {
+      console.log(err, "err");
+      return res.jsonError({
+        data: err,
+        status: 400,
+        message: "Erro ao tentar encontrar o agendamento",
+      });
+    });
+});
+
+router.put("/:id/agenda/:scheduleId", async (req, res) => {
+  const { scheduleId } = req.params;
+  const { status } = req.body;
+
+  await Schedule.findOne({ where: { id: scheduleId } })
+    .then(async function (agendamento) {
+      if (agendamento) {
+        await Schedule.update(
+          { status },
+          {
+            where: { id: scheduleId },
+            returning: true,
+            plain: true,
+          }
+        )
+          .then(function (produtoAtualizado) {
+            return res.jsonOK({
+              data: produtoAtualizado,
+              status: 200,
+              message: "Agendamento atualizado com sucesso!",
+            });
+          })
+          .catch(function (err) {
+            return res.jsonError({
+              data: err,
+              status: 400,
+              message: "Não foi possível atualizar",
+            });
+          });
+      }
+      return res.jsonError({
+        data: null,
+        status: 404,
+        message: "Não foi possível encontrar o agendamento",
+      });
+    })
+    .catch(function (err) {
+      console.log(err);
+      return res.jsonError({
+        data: err,
+        status: 400,
+        message: "Erro ao encontrar o agendamento",
+      });
+    });
+});
+
 module.exports = router;
