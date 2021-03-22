@@ -1,6 +1,7 @@
 const express = require("express");
 
 const { Brand } = require("../models");
+const { verifyJwt } = require("../helpers/jwt");
 
 const router = express.Router();
 /**
@@ -24,33 +25,41 @@ const router = express.Router();
  *         description: Successfully created
  */
 
-router.post("/", async (req, res) => {
+router.post("/", verifyJwt, async (req, res) => {
   const { name } = req.body;
+
+  if (!name)
+    return res.jsonError({
+      status: 400,
+      data: null,
+      message: "É necessário preencher o fabricante",
+    });
 
   await Brand.findOne({ where: { name } })
     .then(async function (fabricante) {
-      if (fabricante)
-        return res.jsonError({
-          data: null,
-          status: 400,
-          message: "Fabricante já cadastrado",
-        });
+      if (!fabricante) {
+        await Brand.create({ name })
+          .then(function (novoFabricante) {
+            return res.jsonOK({
+              data: novoFabricante,
+              status: 201,
+              message: "Fabricante cadastrado com sucesso!",
+            });
+          })
+          .catch(function (err) {
+            return res.jsonError({
+              status: 400,
+              data: err,
+              message: "Não foi possível cadastrar o fabricante",
+            });
+          });
+      }
 
-      await Brand.create({ name })
-        .then(function (novoFabricante) {
-          return res.jsonOK({
-            data: novoFabricante,
-            status: 201,
-            message: "Fabricante cadastrado com sucesso!",
-          });
-        })
-        .catch(function (err) {
-          return res.jsonError({
-            status: 400,
-            data: err,
-            message: "Não foi possível cadastrar o fabricante",
-          });
-        });
+      return res.jsonError({
+        data: null,
+        status: 400,
+        message: "Fabricante já cadastrado",
+      });
     })
     .catch(function (err) {
       return res.jsonError({
@@ -61,7 +70,7 @@ router.post("/", async (req, res) => {
     });
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyJwt, async (req, res) => {
   await Brand.findAll()
     .then(function (fabricantes) {
       if (fabricantes)
@@ -85,7 +94,7 @@ router.get("/", async (req, res) => {
     });
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   await Brand.findOne({ where: { id }, include: "products" })
@@ -112,40 +121,58 @@ router.get("/:id", async (req, res) => {
     });
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
 
-  await Brand.findOne({ where: { id } })
+  await Brand.findOne({ where: { name } })
     .then(async function (fabricante) {
-      if (fabricante) {
-        await Brand.update(
-          { name },
-          {
-            where: { id: fabricante.dataValues.id },
-            returning: true,
-            plain: true,
-          }
-        )
-          .then(function (fabricanteAtualizado) {
-            return res.jsonOK({
-              data: fabricanteAtualizado,
-              status: 200,
-              message: "Fabricante atualizado com sucesso!",
-            });
+      if (!fabricante) {
+        await Brand.findOne({ where: { id } })
+          .then(async function (fabricanteEncontrado) {
+            if (!fabricanteEncontrado)
+              return res.jsonError({
+                data: null,
+                status: 404,
+                message: "Não foi possível encontrar o fabricante",
+              });
+
+            await Brand.update(
+              { name },
+              {
+                where: { id: fabricanteEncontrado.dataValues.id },
+                returning: true,
+                plain: true,
+              }
+            )
+              .then(function (fabricanteAtualizado) {
+                return res.jsonOK({
+                  data: fabricanteAtualizado,
+                  status: 200,
+                  message: "Fabricante atualizado com sucesso!",
+                });
+              })
+              .catch(function (err) {
+                return res.jsonError({
+                  data: err,
+                  status: 400,
+                  message: "Não foi possível atualizar",
+                });
+              });
           })
           .catch(function (err) {
             return res.jsonError({
-              data: err,
-              status: 400,
-              message: "Não foi possível atualizar",
+              data: null,
+              status: 404,
+              message: "Não foi possível encontrar o fabricante",
             });
           });
       }
+
       return res.jsonError({
         data: null,
-        status: 404,
-        message: "Não foi possível encontrar o fabricante",
+        status: 400,
+        message: "Fabricante já existe",
       });
     })
     .catch(function (err) {
@@ -157,7 +184,7 @@ router.put("/:id", async (req, res) => {
     });
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   await Brand.findOne({ where: { id } })
@@ -177,7 +204,7 @@ router.delete("/:id", async (req, res) => {
             return res.jsonError({
               data: err,
               status: 400,
-              message: "Não foi possível atualizar",
+              message: "Erro ao excluir o fabricante",
             });
           });
       }

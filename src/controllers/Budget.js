@@ -4,13 +4,22 @@ const Op = Sequelize.Op; // biblioteca de operadores
 const express = require("express");
 const router = express.Router();
 
-const { Budget, Product, BudgetProduct } = require("../models");
+const { verifyJwt } = require("../helpers/jwt");
+const {
+  Budget,
+  Product,
+  BudgetProduct,
+  Vehicle,
+  Model,
+  Brand,
+  User,
+  Schedule,
+} = require("../models");
 
-router.post("/", async (req, res) => {
+router.post("/", verifyJwt, async (req, res) => {
   const {
     expirationDate,
     paymentMethod,
-    status,
     userId,
     products,
     userVehicleId,
@@ -23,11 +32,18 @@ router.post("/", async (req, res) => {
     savedBudget = await Budget.create({
       expirationDate: expirationDate || new Date(),
       paymentMethod,
-      status,
+      status: "PENDENTE",
       userId,
       userVehicleId,
       scheduleId,
     });
+
+    await Schedule.update(
+      {
+        status: "FINALIZADO",
+      },
+      { where: { id: scheduleId } }
+    );
   } catch (err) {
     return res.jsonError({
       data: err,
@@ -67,7 +83,7 @@ router.post("/", async (req, res) => {
   });
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyJwt, async (req, res) => {
   const { userId, status } = req.query;
 
   if (userId || status) {
@@ -83,6 +99,16 @@ router.get("/", async (req, res) => {
             as: "budgetProduct",
             attributes: ["quantity"],
           },
+        },
+        {
+          model: Vehicle,
+          as: "vehicle",
+          attributes: ["plate", "color", "kilometer", "year"],
+          include: [
+            { model: Model, as: "model", attributes: ["model"] },
+            { model: Brand, as: "brand", attributes: ["name"] },
+            { model: User, as: "user", attributes: ["name"] },
+          ],
         },
       ],
       where: {
@@ -130,6 +156,16 @@ router.get("/", async (req, res) => {
           attributes: ["quantity"],
         },
       },
+      {
+        model: Vehicle,
+        as: "vehicle",
+        attributes: ["plate", "color", "kilometer", "year"],
+        include: [
+          { model: Model, as: "model", attributes: ["model"] },
+          { model: Brand, as: "brand", attributes: ["name"] },
+          { model: User, as: "user", attributes: ["name"] },
+        ],
+      },
     ],
   })
     .then(function (orcamentos) {
@@ -155,7 +191,7 @@ router.get("/", async (req, res) => {
     });
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   await Budget.findAll({
@@ -197,7 +233,7 @@ router.get("/:id", async (req, res) => {
     });
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
   const {
     expirationDate,
@@ -268,7 +304,7 @@ router.put("/:id", async (req, res) => {
     });
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyJwt, async (req, res) => {
   const { name } = req.body;
   const { id } = req.params;
 
@@ -284,7 +320,7 @@ router.delete("/:id", async (req, res) => {
 
   const deletedOrder = await Budget.update(
     {
-      status: "Cancelado",
+      status: "RECUSADO",
     },
     { where: { id } }
   );
@@ -304,7 +340,7 @@ router.delete("/:id", async (req, res) => {
   });
 });
 
-router.get("/:id/estatistica", async (req, res) => {
+router.get("/:id/estatistica", verifyJwt, async (req, res) => {
   const { status } = req.query;
 
   if (status) {

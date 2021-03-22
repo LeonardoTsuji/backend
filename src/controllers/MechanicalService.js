@@ -3,9 +3,17 @@ const express = require("express");
 const { MechanicalService } = require("../models");
 
 const router = express.Router();
+const { verifyJwt } = require("../helpers/jwt");
 
-router.post("/", async (req, res) => {
+router.post("/", verifyJwt, async (req, res) => {
   const { name, description, price } = req.body;
+
+  if (!name || !description || !price)
+    return res.jsonError({
+      status: 400,
+      data: err,
+      message: "É necessário preecnher os campos obrigatórios: nome, descrição e preço",
+    });
 
   await MechanicalService.findOne({ where: { name } })
     .then(async function (servicoMecanico) {
@@ -65,7 +73,7 @@ router.get("/", async (req, res) => {
     });
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   await MechanicalService.findOne({ where: { id } })
@@ -91,7 +99,7 @@ router.get("/:id", async (req, res) => {
     });
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
   const { name, description, price } = req.body;
 
@@ -132,7 +140,7 @@ router.put("/:id", async (req, res) => {
     });
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   await MechanicalService.findOne({ where: { id } })

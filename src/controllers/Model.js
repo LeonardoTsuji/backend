@@ -3,8 +3,9 @@ const express = require("express");
 const { Model } = require("../models");
 
 const router = express.Router();
+const { verifyJwt } = require("../helpers/jwt");
 
-router.post("/", async (req, res) => {
+router.post("/", verifyJwt, async (req, res) => {
   const { model, brandId } = req.body;
 
   await Model.findOne({ where: { model } })
@@ -41,7 +42,7 @@ router.post("/", async (req, res) => {
     });
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyJwt, async (req, res) => {
   const { brandId } = req.query;
 
   if (brandId)
@@ -94,7 +95,7 @@ router.get("/", async (req, res) => {
     });
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   await Model.findByPk(id)
@@ -120,7 +121,7 @@ router.get("/:id", async (req, res) => {
     });
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
   const { model, brandId } = req.body;
 
@@ -161,7 +162,7 @@ router.put("/:id", async (req, res) => {
     });
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   await Model.findByPk(id)

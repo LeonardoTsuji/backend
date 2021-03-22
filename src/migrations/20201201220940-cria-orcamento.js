@@ -16,7 +16,7 @@ module.exports = {
           type: DataTypes.DATE,
         },
         paymentMethod: {
-          allowNull: false,
+          allowNull: true,
           type: DataTypes.STRING,
         },
         status: {

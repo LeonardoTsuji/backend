@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
       },
       paymentMethod: {
-        allowNull: false,
+        allowNull: true,
         type: DataTypes.STRING,
       },
       status: {

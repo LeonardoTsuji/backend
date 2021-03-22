@@ -1,12 +1,14 @@
 const Sequelize = require("sequelize");
+const { sequelize } = require("../models/index");
 const Op = Sequelize.Op; // biblioteca de operadores
 
 const express = require("express");
 const router = express.Router();
+const { verifyJwt } = require("../helpers/jwt");
 
 const { ServiceOrder, Product, ServiceOrderProduct } = require("../models");
 
-router.post("/", async (req, res) => {
+router.post("/", verifyJwt, async (req, res) => {
   const {
     paid,
     done,
@@ -18,15 +20,25 @@ router.post("/", async (req, res) => {
     products,
   } = req.body;
 
-  const savedServiceOrder = await ServiceOrder.create({
-    paid,
-    done,
-    notes,
-    paymentMethod,
-    paymentDate,
-    userId,
-    userVehicleId,
-  });
+  let savedServiceOrder;
+
+  try {
+    savedServiceOrder = await ServiceOrder.create({
+      paid,
+      done,
+      notes,
+      paymentMethod,
+      paymentDate,
+      userId,
+      userVehicleId,
+    });
+  } catch (err) {
+    return res.jsonError({
+      data: err,
+      status: 400,
+      message: "Erro ao gerar ordem de serviço",
+    });
+  }
 
   if (products) {
     const promisesProducts = products.map(async (item) => {
@@ -59,7 +71,7 @@ router.post("/", async (req, res) => {
   });
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyJwt, async (req, res) => {
   const { userId } = req.query;
 
   if (userId) {
@@ -140,7 +152,7 @@ router.get("/", async (req, res) => {
     });
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   await ServiceOrder.findAll({
@@ -182,7 +194,7 @@ router.get("/:id", async (req, res) => {
     });
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
   const {
     paid,
@@ -253,7 +265,7 @@ router.put("/:id", async (req, res) => {
   });
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   const serviceOrder = await ServiceOrder.findByPk(id);
@@ -288,7 +300,7 @@ router.delete("/:id", async (req, res) => {
   });
 });
 
-router.get("/:id/estatistica", async (req, res) => {
+router.get("/:id/estatistica", verifyJwt, async (req, res) => {
   const { paid, done } = req.query;
 
   if (paid || done) {

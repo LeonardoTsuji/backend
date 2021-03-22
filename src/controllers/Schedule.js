@@ -4,15 +4,15 @@ const { Schedule, Vehicle, Model, Brand, User } = require("../models");
 
 const { sequelize } = require("../models/index");
 const router = express.Router();
+const { verifyJwt } = require("../helpers/jwt");
 
-router.post("/", async (req, res) => {
-  const { userId, dateSchedule, hourSchedule, vehicleId } = req.body;
+router.post("/", verifyJwt, async (req, res) => {
+  const { userId, dateSchedule, vehicleId } = req.body;
 
   await Schedule.create({
     status: "ATIVO",
     userId,
     dateSchedule,
-    hourSchedule,
     vehicleId,
   })
     .then(function (novoAgendamento) {
@@ -32,7 +32,7 @@ router.post("/", async (req, res) => {
     });
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyJwt, async (req, res) => {
   const { status } = req.query;
 
   if (status)
@@ -91,16 +91,17 @@ router.get("/", async (req, res) => {
     raw: true,
   })
     .then(function (agendamento) {
-      if (agendamento)
-        return res.jsonOK({
-          data: agendamento,
-          status: 200,
-          message: "Agendamento encontrado com sucesso!",
+      if (!agendamento)
+        return res.jsonError({
+          data: null,
+          status: 404,
+          message: "Não foi possível encontrar o agendamento",
         });
-      return res.jsonError({
-        data: null,
-        status: 404,
-        message: "Não foi possível encontrar o agendamento",
+
+      return res.jsonOK({
+        data: agendamento,
+        status: 200,
+        message: "Agendamento encontrado com sucesso!",
       });
     })
     .catch(function (err) {
@@ -113,10 +114,26 @@ router.get("/", async (req, res) => {
     });
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
-  await Schedule.findOne({ where: { id } })
+  await Schedule.findOne({
+    include: [
+      {
+        model: Vehicle,
+        as: "vehicle",
+        attributes: ["plate", "color", "kilometer", "year"],
+        include: [
+          { model: Model, as: "model", attributes: ["model"] },
+          { model: Brand, as: "brand", attributes: ["name"] },
+          { model: User, as: "user", attributes: ["name"] },
+        ],
+      },
+    ],
+    order: [["dateSchedule", "ASC"]],
+    raw: true,
+    where: { id },
+  })
     .then(function (agendamento) {
       if (agendamento)
         return res.jsonOK({
@@ -140,7 +157,7 @@ router.get("/:id", async (req, res) => {
     });
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", verifyJwt, async (req, res) => {
   const { status } = req.body;
   const { id } = req.params;
 
@@ -186,16 +203,21 @@ router.put("/:id", async (req, res) => {
     });
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyJwt, async (req, res) => {
   const { name } = req.body;
   const { id } = req.params;
 
   await Schedule.findOne({ where: { id } })
     .then(async function (agendamento) {
       if (agendamento) {
-        await Schedule.destroy({
-          where: { id: agendamento.dataValues.id },
-        })
+        await Schedule.update(
+          {
+            status: "CANCELADO",
+          },
+          {
+            where: { id: agendamento.dataValues.id },
+          }
+        )
           .then(function (produtoAtualizado) {
             return res.jsonOK({
               data: produtoAtualizado,
@@ -207,7 +229,7 @@ router.delete("/:id", async (req, res) => {
             return res.jsonError({
               data: err,
               status: 400,
-              message: "Não foi possível atualizar",
+              message: "Não foi possível excluir",
             });
           });
       }
@@ -227,7 +249,7 @@ router.delete("/:id", async (req, res) => {
     });
 });
 
-router.get("/:id/dia", async (req, res) => {
+router.get("/:id/dia", verifyJwt, async (req, res) => {
   await Schedule.findAll({
     attributes: [
       [sequelize.fn("DISTINCT", sequelize.col("dateSchedule")), "dateSchedule"],
@@ -257,42 +279,7 @@ router.get("/:id/dia", async (req, res) => {
     });
 });
 
-router.get("/:id/hora", async (req, res) => {
-  const { dateSchedule } = req.query;
-
-  await Schedule.findAll({
-    attributes: [
-      [sequelize.fn("DISTINCT", sequelize.col("hourSchedule")), "hourSchedule"],
-    ],
-    where: {
-      dateSchedule,
-    },
-    raw: true,
-  })
-    .then(function (agendamento) {
-      if (agendamento)
-        return res.jsonOK({
-          data: agendamento.map((res) => res.hourSchedule),
-          status: 200,
-          message: "Agendamento encontrado com sucesso!",
-        });
-      return res.jsonError({
-        data: null,
-        status: 404,
-        message: "Não foi possível encontrar o agendamento",
-      });
-    })
-    .catch(function (err) {
-      console.log(err, "err");
-      return res.jsonError({
-        data: err,
-        status: 400,
-        message: "Erro ao tentar encontrar o agendamento",
-      });
-    });
-});
-
-router.get("/:id/estatistica", async (req, res) => {
+router.get("/:id/estatistica", verifyJwt, async (req, res) => {
   const { status } = req.query;
 
   if (status)

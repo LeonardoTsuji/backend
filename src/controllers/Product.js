@@ -1,14 +1,20 @@
 const express = require("express");
 
-const { QueryTypes } = require("sequelize");
+const { Product } = require("../models");
 
-const { Product, Category, Brand, CategoryProduct } = require("../models");
-
-const { sequelize } = require("../models/index");
 const router = express.Router();
+const { verifyJwt } = require("../helpers/jwt");
 
-router.post("/", async (req, res) => {
+router.post("/", verifyJwt, async (req, res) => {
   const { name, description, price, brandId, categoryId } = req.body;
+
+  if (!name || !price || !brandId || !categoryId)
+    return res.jsonError({
+      status: 400,
+      data: null,
+      message:
+        "É necessário preencher os dados do produto: nome, preço, categoria, fabricante",
+    });
 
   await Product.create({
     name,
@@ -18,7 +24,6 @@ router.post("/", async (req, res) => {
     categoryId,
   })
     .then(function (novoProduto) {
-      novoProduto.setCategory([categoryId]);
       return res.jsonOK({
         data: novoProduto,
         status: 201,
@@ -35,7 +40,7 @@ router.post("/", async (req, res) => {
     });
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyJwt, async (req, res) => {
   const { brandId, categoryId } = req.query;
   if (brandId && categoryId) {
     await Product.findAll({
@@ -90,7 +95,7 @@ router.get("/", async (req, res) => {
     });
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
   const { name } = req.query;
 
@@ -118,15 +123,23 @@ router.get("/:id", async (req, res) => {
     });
 });
 
-router.put("/:id", async (req, res) => {
-  const { name, description, price, idFabricante, idCategoria } = req.body;
+router.put("/:id", verifyJwt, async (req, res) => {
+  const { name, description, price, brandId, categoryId } = req.body;
   const { id } = req.params;
+
+  if (!name || !description || !price || !brandId || !categoryId)
+    return res.jsonError({
+      status: 400,
+      data: null,
+      message:
+        "É necessário preencher os dados do produto: nome, descrição, preço, categoria, fabricante",
+    });
 
   await Product.findByPk(id)
     .then(async function (produto) {
       if (produto) {
         await Product.update(
-          { name, description, price, idFabricante, idCategoria },
+          { name, description, price, brandId, categoryId },
           {
             where: { id: produto.dataValues.id },
             returning: true,
@@ -164,7 +177,7 @@ router.put("/:id", async (req, res) => {
     });
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyJwt, async (req, res) => {
   const { name } = req.body;
   const { id } = req.params;
 

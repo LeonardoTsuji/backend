@@ -17,6 +17,10 @@ const {
   BudgetProduct,
   Vehicle,
   Schedule,
+  ServiceOrder,
+  ServiceOrderProduct,
+  Model,
+  Brand,
 } = require("../models");
 
 const SendEmail = require("./SendMail");
@@ -79,7 +83,7 @@ router.post("/", async (req, res) => {
     });
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyJwt, async (req, res) => {
   await User.findAll({
     include: {
       model: Role,
@@ -108,7 +112,7 @@ router.get("/", async (req, res) => {
     });
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
   const { email } = req.query;
 
@@ -135,7 +139,7 @@ router.get("/:id", async (req, res) => {
     });
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", verifyJwt, async (req, res) => {
   const { name, email, password, phone, roleId } = req.body;
 
   await User.findOne({ where: { email } })
@@ -174,7 +178,7 @@ router.put("/:id", async (req, res) => {
     });
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyJwt, async (req, res) => {
   const { email } = req.body;
 
   await User.findOne({ where: { email } })
@@ -215,7 +219,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 //Orçamento usuário
-router.post("/:id/orcamento", async (req, res) => {
+router.post("/:id/orcamento", verifyJwt, async (req, res) => {
   const {
     expirationDate,
     paymentMethod,
@@ -264,7 +268,44 @@ router.post("/:id/orcamento", async (req, res) => {
   });
 });
 
-router.get("/:id/orcamento", async (req, res) => {
+router.put("/:id/orcamento/:budgetId", verifyJwt, async (req, res) => {
+  const { budgetId } = req.params;
+
+  const { paymentMethod, status } = req.body;
+
+  const budget = await Budget.findByPk(budgetId);
+
+  if (!budget)
+    return res.jsonError({
+      data: null,
+      status: 404,
+      message: "Não foi possível encontrar o orçamento",
+    });
+
+  await Budget.update(
+    {
+      paymentMethod,
+      status,
+    },
+    { where: { id: budgetId } }
+  )
+    .then(function (updatedBudget) {
+      return res.jsonOK({
+        data: updatedBudget,
+        status: 200,
+        message: "Orçamento atualizado com sucesso!",
+      });
+    })
+    .catch(function (err) {
+      return res.jsonError({
+        data: err,
+        status: 400,
+        message: "Erro ao atualizar o orçamento",
+      });
+    });
+});
+
+router.get("/:id/orcamento", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   if (id) {
@@ -345,7 +386,7 @@ router.get("/:id/orcamento", async (req, res) => {
     });
 });
 
-router.get("/:id/orcamento/:budgetId/valor", async (req, res) => {
+router.get("/:id/orcamento/:budgetId/valor", verifyJwt, async (req, res) => {
   const { id, budgetId } = req.params;
 
   await Budget.findAll({
@@ -394,7 +435,7 @@ router.get("/:id/orcamento/:budgetId/valor", async (req, res) => {
 });
 
 //Veículo usuário
-router.post("/:id/veiculo", async (req, res) => {
+router.post("/:id/veiculo", verifyJwt, async (req, res) => {
   const { model, plate, color, year, kilometer, brandId, modelId } = req.body;
   const { id } = req.params;
 
@@ -434,7 +475,7 @@ router.post("/:id/veiculo", async (req, res) => {
     });
 });
 
-router.get("/:id/veiculo", async (req, res) => {
+router.get("/:id/veiculo", verifyJwt, async (req, res) => {
   const { id } = req.params;
   await User.findAll({
     include: [
@@ -470,7 +511,7 @@ router.get("/:id/veiculo", async (req, res) => {
     });
 });
 
-router.get("/:id/veiculo/:vehicleId", async (req, res) => {
+router.get("/:id/veiculo/:vehicleId", verifyJwt, async (req, res) => {
   const { id, vehicleId } = req.params;
   await User.findAll({
     include: [
@@ -510,7 +551,7 @@ router.get("/:id/veiculo/:vehicleId", async (req, res) => {
     });
 });
 
-router.put("/:id/veiculo/:vehicleId", async (req, res) => {
+router.put("/:id/veiculo/:vehicleId", verifyJwt, async (req, res) => {
   const { id } = req.params;
   await User.findAll({
     include: [
@@ -548,7 +589,7 @@ router.put("/:id/veiculo/:vehicleId", async (req, res) => {
 });
 
 // Agenda usuário
-router.post("/:id/agenda", async (req, res) => {
+router.post("/:id/agenda", verifyJwt, async (req, res) => {
   const { userId, dateSchedule, hourSchedule, vehicleId } = req.body;
 
   await Schedule.create({
@@ -575,10 +616,24 @@ router.post("/:id/agenda", async (req, res) => {
     });
 });
 
-router.get("/:id/agenda", async (req, res) => {
+router.get("/:id/agenda", verifyJwt, async (req, res) => {
   const { id } = req.params;
 
   await Schedule.findAll({
+    include: [
+      {
+        model: Vehicle,
+        as: "vehicle",
+        attributes: ["plate", "color", "kilometer", "year"],
+        include: [
+          { model: Model, as: "model", attributes: ["model"] },
+          { model: Brand, as: "brand", attributes: ["name"] },
+          { model: User, as: "user", attributes: ["name"] },
+        ],
+      },
+    ],
+    order: [["dateSchedule", "ASC"]],
+    raw: true,
     where: { userId: id },
   })
     .then(function (agendamento) {
@@ -604,10 +659,24 @@ router.get("/:id/agenda", async (req, res) => {
     });
 });
 
-router.get("/:id/agenda/:scheduleId", async (req, res) => {
+router.get("/:id/agenda/:scheduleId", verifyJwt, async (req, res) => {
   const { id, scheduleId } = req.params;
 
   await Schedule.findAll({
+    include: [
+      {
+        model: Vehicle,
+        as: "vehicle",
+        attributes: ["plate", "color", "kilometer", "year"],
+        include: [
+          { model: Model, as: "model", attributes: ["model"] },
+          { model: Brand, as: "brand", attributes: ["name"] },
+          { model: User, as: "user", attributes: ["name"] },
+        ],
+      },
+    ],
+    order: [["dateSchedule", "ASC"]],
+    raw: true,
     where: { id: scheduleId },
   })
     .then(function (agendamento) {
@@ -633,7 +702,7 @@ router.get("/:id/agenda/:scheduleId", async (req, res) => {
     });
 });
 
-router.put("/:id/agenda/:scheduleId", async (req, res) => {
+router.put("/:id/agenda/:scheduleId", verifyJwt, async (req, res) => {
   const { scheduleId } = req.params;
   const { status } = req.body;
 
@@ -678,5 +747,102 @@ router.put("/:id/agenda/:scheduleId", async (req, res) => {
       });
     });
 });
+
+//Ordem serviço
+
+router.get(
+  "/:id/ordem-servico/:serviceOrderId/valor",
+  verifyJwt,
+  async (req, res) => {
+    const { id, serviceOrderId } = req.params;
+
+    await ServiceOrder.findAll({
+      attributes: [
+        [sequelize.literal("sum(products.price *  quantity)"), "total"],
+      ],
+      include: [
+        {
+          model: Product,
+          as: "products",
+          required: false,
+          attributes: [],
+          through: {
+            // This block of code allows you to retrieve the properties of the join table
+            model: ServiceOrderProduct,
+            as: "serviceOrderProduct",
+            attributes: ["quantity"],
+            where: { serviceOrderId },
+          },
+        },
+      ],
+      raw: true,
+      where: { userId: id },
+    })
+      .then(function (ordemServico) {
+        if (ordemServico && ordemServico.length > 0)
+          return res.jsonOK({
+            data: ordemServico[0],
+            status: 200,
+            message: "Ordem de serviço encontrada com sucesso!",
+          });
+        return res.jsonError({
+          data: null,
+          status: 404,
+          message: "Não foi possível encontrar a ordem de serviço",
+        });
+      })
+      .catch(function (err) {
+        console.log(err, "err");
+        return res.jsonError({
+          data: err,
+          status: 400,
+          message: "Erro ao tentar encontrar a ordem de serviço",
+        });
+      });
+  }
+);
+
+router.put(
+  "/:id/ordem-servico/:serviceOrderId",
+  verifyJwt,
+  async (req, res) => {
+    const { id, serviceOrderId } = req.params;
+    const { paid, done, notes, paymentDate, paymentMethod } = req.body;
+
+    const serviceOrder = await ServiceOrder.findByPk(serviceOrderId);
+
+    if (!serviceOrder)
+      return res.jsonError({
+        data: null,
+        status: 404,
+        message: "Não foi possível encontrar a ordem de serviço",
+      });
+
+    await ServiceOrder.update(
+      {
+        paid,
+        done,
+        notes,
+        paymentDate,
+        paymentMethod,
+      },
+      { where: { id: serviceOrderId } }
+    )
+      .then(function (serviceOrderUpdated) {
+        return res.jsonOK({
+          data: serviceOrderUpdated,
+          status: 200,
+          message: "Ordem de serviço atualizada com sucesso!",
+        });
+      })
+      .catch(function (err) {
+        return res.jsonError({
+          data: err,
+          status: 400,
+          message: "Erro ao atualizar a ordem de serviço",
+        });
+      });
+  }
+);
 
 module.exports = router;

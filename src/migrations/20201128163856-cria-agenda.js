@@ -15,10 +15,6 @@ module.exports = {
           allowNull: false,
           type: DataTypes.STRING,
         },
-        hourSchedule: {
-          allowNull: false,
-          type: DataTypes.TIME,
-        },
         status: {
           allowNull: false,
           type: DataTypes.STRING,
