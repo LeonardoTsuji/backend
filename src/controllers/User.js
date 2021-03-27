@@ -483,6 +483,7 @@ router.get("/:id/veiculo", verifyJwt, async (req, res) => {
         model: Vehicle,
         as: "vehicle",
         required: false,
+        include: [{ model: Model, as: "model", attributes: ["model"] }],
       },
     ],
     where: {
@@ -519,6 +520,7 @@ router.get("/:id/veiculo/:vehicleId", verifyJwt, async (req, res) => {
         model: Vehicle,
         as: "vehicle",
         required: false,
+        include: [{ model: Model, as: "model", attributes: ["model"] }],
         where: {
           id: vehicleId,
         },
@@ -749,6 +751,91 @@ router.put("/:id/agenda/:scheduleId", verifyJwt, async (req, res) => {
 });
 
 //Ordem serviço
+
+router.get("/:id/ordem-servico", verifyJwt, async (req, res) => {
+  const { id } = req.params;
+
+  await ServiceOrder.findAll({
+    include: [
+      {
+        model: Product,
+        as: "products",
+        required: false,
+        through: {
+          // This block of code allows you to retrieve the properties of the join table
+          model: ServiceOrderProduct,
+          as: "serviceOrderProduct",
+          attributes: ["quantity"],
+        },
+      },
+    ],
+    where: { userId: id },
+  })
+    .then(function (ordemServico) {
+      return res.jsonOK({
+        data: ordemServico,
+        status: 200,
+        message: "Ordem de serviço encontrada com sucesso!",
+      });
+    })
+    .catch(function (err) {
+      console.log(err, "err");
+      return res.jsonError({
+        data: err,
+        status: 400,
+        message: "Erro ao tentar encontrar a ordem de serviço",
+      });
+    });
+});
+
+router.get(
+  "/:id/ordem-servico/:serviceOrderId",
+  verifyJwt,
+  async (req, res) => {
+    const { id, serviceOrderId } = req.params;
+
+    await ServiceOrder.findAll({
+      include: [
+        {
+          model: Product,
+          as: "products",
+          required: false,
+          attributes: [],
+          through: {
+            // This block of code allows you to retrieve the properties of the join table
+            model: ServiceOrderProduct,
+            as: "serviceOrderProduct",
+            attributes: ["quantity"],
+            where: { serviceOrderId },
+          },
+        },
+      ],
+      raw: true,
+      where: { userId: id },
+    })
+      .then(function (ordemServico) {
+        if (ordemServico && ordemServico.length > 0)
+          return res.jsonOK({
+            data: ordemServico[0],
+            status: 200,
+            message: "Ordem de serviço encontrada com sucesso!",
+          });
+        return res.jsonError({
+          data: null,
+          status: 404,
+          message: "Não foi possível encontrar a ordem de serviço",
+        });
+      })
+      .catch(function (err) {
+        console.log(err, "err");
+        return res.jsonError({
+          data: err,
+          status: 400,
+          message: "Erro ao tentar encontrar a ordem de serviço",
+        });
+      });
+  }
+);
 
 router.get(
   "/:id/ordem-servico/:serviceOrderId/valor",

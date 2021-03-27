@@ -1,5 +1,6 @@
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op; // biblioteca de operadores
+const { sequelize } = require("../models/index");
 
 const express = require("express");
 const router = express.Router();
@@ -343,7 +344,7 @@ router.delete("/:id", verifyJwt, async (req, res) => {
 router.get("/:id/estatistica", verifyJwt, async (req, res) => {
   const { status } = req.query;
 
-  if (status) {
+  if (status !== null || status !== undefined) {
     await Budget.count({
       where: { status },
     })
@@ -364,6 +365,31 @@ router.get("/:id/estatistica", verifyJwt, async (req, res) => {
   }
 
   await Budget.count()
+    .then(function (orcamentos) {
+      return res.jsonOK({
+        data: { count: orcamentos },
+        status: 200,
+        message: "Orçamentos encontrado com sucesso!",
+      });
+    })
+    .catch(function (err) {
+      console.log(err, "err");
+      return res.jsonError({
+        data: err,
+        status: 400,
+        message: "Erro ao tentar encontrar os orçamentos",
+      });
+    });
+});
+
+router.get("/:id/estatistica/mes", verifyJwt, async (req, res) => {
+  await Budget.findAll({
+    attributes: [
+      [sequelize.fn("COUNT", "*"), "quantity"],
+      [sequelize.fn("MONTH", sequelize.col("createdAt")), "month"],
+    ],
+    group: [[sequelize.fn("MONTH", sequelize.col("createdAt")), "month"]],
+  })
     .then(function (orcamentos) {
       return res.jsonOK({
         data: { count: orcamentos },
