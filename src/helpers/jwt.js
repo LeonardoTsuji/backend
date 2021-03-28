@@ -22,14 +22,16 @@ const generateRefreshJwt = (payload) => {
 const verifyJwt = (req, res, next) => {
   const token = req.headers["authorization"];
   if (!token)
-    return res.status(401).json({ auth: false, message: "No token provided." });
+    return res
+      .status(401)
+      .json({ auth: false, message: "Nenhum token informado!" });
 
   const bearer = token.split(" ");
   const bearerToken = bearer[1];
 
   jwt.verify(bearerToken, process.env.JWT_TOKEN, function (err, decoded) {
     if (err)
-      return res.status(401).json({ auth: false, message: "Invalid token" });
+      return res.status(401).json({ auth: false, message: "Token inválido!" });
 
     // se tudo estiver ok, salva no request para uso posterior
     req.userId = decoded.id;

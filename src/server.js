@@ -51,7 +51,6 @@ const modelo = require("./controllers/Model");
 const servicoMecanico = require("./controllers/MechanicalService");
 const orcamento = require("./controllers/Budget");
 const agenda = require("./controllers/Schedule");
-const sendMail = require("./controllers/SendMail");
 const ordemServico = require("./controllers/ServiceOrder");
 
 //Middlewares
@@ -75,7 +74,6 @@ app.use("/modelo-veiculo", modelo);
 app.use("/servico-mecanico", servicoMecanico);
 app.use("/orcamento", orcamento);
 app.use("/agenda", agenda);
-app.use("/email", sendMail);
 app.use("/ordem-servico", ordemServico);
 app.get("/swagger.json", function (req, res) {
   res.setHeader("Content-Type", "application/json");

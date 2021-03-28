@@ -1,45 +1,22 @@
-const express = require("express");
-
 const { User } = require("../models");
-const sendMail = require("../services/Email");
+const mailer = require("../services/Email");
 
-const router = express.Router();
-
-router.post("/", async (req, res) => {
-  const { email, subject, text, password } = req.body;
+exports.sendUserEmail = async (req, template) => {
+  const { email, subject, text } = req.body;
 
   await User.findOne({ where: { email } })
-    .then(async function (account) {
-      if (!account)
-        return res.jsonError({
-          data: null,
-          status: 404,
-          message: "Não foi possível encontrar o usuário",
-        });
-
-      const response = await sendMail({
+    .then(async function (res) {
+      const responseMail = await mailer.sendMail({
         to: email,
-        subject: "Primeiro Acesso",
-        variables: {
-          password,
-          login: email,
+        from: "leonardo_tsuji@hotmail.com",
+        subject: subject,
+        context: {
+          ...req.body,
         },
-      });
-
-      return res.jsonOK({
-        data: response,
-        status: 200,
-        message: "E-mail enviado com sucesso!",
+        template,
       });
     })
     .catch(function (err) {
       console.log(err, "err");
-      return res.jsonError({
-        status: 400,
-        data: err,
-        message: "Erro ao enviar o e-mail",
-      });
     });
-});
-
-module.exports = router;
+};

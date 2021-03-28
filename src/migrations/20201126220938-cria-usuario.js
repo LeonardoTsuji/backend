@@ -18,7 +18,6 @@ module.exports = {
         email: {
           allowNull: false,
           type: DataTypes.STRING,
-          unique: true,
         },
         phone: {
           allowNull: false,
@@ -35,6 +34,10 @@ module.exports = {
             model: "Role",
             key: "id",
           },
+        },
+        active: {
+          allowNull: false,
+          type: DataTypes.BOOLEAN,
         },
         createdAt: {
           allowNull: false,

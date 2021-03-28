@@ -9,7 +9,6 @@ module.exports = (sequelize, DataTypes) => {
       email: {
         allowNull: false,
         type: DataTypes.STRING,
-        unique: true,
       },
       password: {
         allowNull: false,
@@ -18,6 +17,10 @@ module.exports = (sequelize, DataTypes) => {
       phone: {
         allowNull: false,
         type: DataTypes.STRING,
+      },
+      active: {
+        allowNull: false,
+        type: DataTypes.BOOLEAN,
       },
     },
     {

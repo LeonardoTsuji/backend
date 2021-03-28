@@ -32,7 +32,7 @@ const saltRounds = 10;
 router.post("/", async (req, res) => {
   const { email, password, name, phone, roleId } = req.body;
 
-  await User.findOne({ where: { email } })
+  await User.findOne({ where: { email, active: true } })
     .then(async function (account) {
       if (account)
         return res.jsonError({
@@ -43,30 +43,44 @@ router.post("/", async (req, res) => {
 
       const hash = bcrypt.hashSync(password, saltRounds);
 
-      await User.create({ email, phone, name, password: hash, roleId })
+      await User.create({
+        email,
+        phone,
+        name,
+        password: hash,
+        roleId,
+        active: true,
+      })
         .then(function (newUser) {
-          if (newUser) {
-            const token = generateJwt({ id: newUser.id });
-            const refreshToken = generateRefreshJwt({
-              id: newUser.id,
-              version: newUser.jwtVersion,
-            });
-
-            return res.jsonOK({
-              data: newUser,
-              status: 201,
-              message: "Cadastro efetuado com sucesso!",
-              metadata: { token, refreshToken },
+          if (!newUser) {
+            return res.jsonError({
+              status: 404,
+              data: err,
+              message: "Não foi possível encontrar o perfil de usuário!",
             });
           }
 
-          return res.jsonError({
-            status: 404,
-            data: err,
-            message: "Não foi possível encontrar o perfil de usuário!",
+          const token = generateJwt({ id: newUser.id });
+          const refreshToken = generateRefreshJwt({
+            id: newUser.id,
+            version: newUser.jwtVersion,
+          });
+
+          req.body.login = email;
+          req.body.password = password;
+          req.body.subject = "Premium Car Bauru - Primeiro Login";
+
+          SendEmail.sendUserEmail(req, "login");
+
+          return res.jsonOK({
+            data: newUser,
+            status: 201,
+            message: "Cadastro efetuado com sucesso!",
+            metadata: { token, refreshToken },
           });
         })
         .catch(function (err) {
+          console.log(err, "err");
           return res.jsonError({
             status: 400,
             data: err,
@@ -75,6 +89,7 @@ router.post("/", async (req, res) => {
         });
     })
     .catch(function (err) {
+      console.log(err, "err");
       return res.jsonError({
         status: 400,
         data: err,
@@ -84,11 +99,42 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/", verifyJwt, async (req, res) => {
+  const { role } = req.query;
+  if (role)
+    await User.findAll({
+      include: {
+        model: Role,
+        as: "role",
+      },
+      where: { roleId: role, active: true },
+    })
+      .then(function (accounts) {
+        if (accounts)
+          return res.jsonOK({
+            data: accounts,
+            status: 200,
+            message: "Usuários encontrado com sucesso!",
+          });
+        return res.jsonError({
+          data: null,
+          status: 404,
+          message: "Não foi possível encontrar usuários",
+        });
+      })
+      .catch(function (err) {
+        return res.jsonError({
+          data: err,
+          status: 400,
+          message: "Erro ao tentar encontrar o usuário",
+        });
+      });
+
   await User.findAll({
     include: {
       model: Role,
       as: "role",
     },
+    where: { active: true },
   })
     .then(function (accounts) {
       if (accounts)
@@ -116,7 +162,7 @@ router.get("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
   const { email } = req.query;
 
-  await User.findOne({ where: { email } })
+  await User.findOne({ where: { email, active: true } })
     .then(function (account) {
       if (account)
         return res.jsonOK({
@@ -140,34 +186,66 @@ router.get("/:id", verifyJwt, async (req, res) => {
 });
 
 router.put("/:id", verifyJwt, async (req, res) => {
-  const { name, email, password, phone, roleId } = req.body;
+  const { id } = req.params;
+  const { name, email, phone, roleId, active } = req.body;
 
-  await User.findOne({ where: { email } })
+  if (!roleId)
+    return res.jsonError({
+      data: null,
+      status: 400,
+      message: "É necessário informar a regra do usuário",
+    });
+
+  await User.findByPk(id)
     .then(async function (account) {
-      if (account) {
-        await User.update(
-          { name, email, password, phone, roleId },
-          {
-            where: { id: account.dataValues.id },
-            returning: true,
-            plain: true,
-          }
-        )
-          .then(function (updatedUsuario) {
-            return res.jsonOK({
-              data: updatedUsuario,
-              status: 200,
-              message: "Usuário atualizado com sucesso!",
-            });
-          })
-          .catch(function (err) {
-            return res.jsonError({
-              data: err,
-              status: 400,
-              message: "Não foi possível atualizar",
-            });
-          });
+      if (!account) {
+        return res.jsonError({
+          data: null,
+          status: 404,
+          message: "Não foi possível encontrar o usuário",
+        });
       }
+
+      await User.findOne({ where: { email } })
+        .then(async function (user) {
+          if (user.dataValues.email !== email)
+            return res.jsonError({
+              data: null,
+              status: 400,
+              message: "E-mail já cadastrado!",
+            });
+
+          await User.update(
+            { name, email, phone, roleId, active },
+            {
+              where: { id },
+              returning: true,
+              plain: true,
+            }
+          )
+            .then(function (updatedUsuario) {
+              return res.jsonOK({
+                data: updatedUsuario,
+                status: 200,
+                message: "Usuário atualizado com sucesso!",
+              });
+            })
+            .catch(function (err) {
+              return res.jsonError({
+                data: err,
+                status: 400,
+                message: "Não foi possível atualizar",
+              });
+            });
+        })
+        .catch(function (err) {
+          console.log(err);
+          return res.jsonError({
+            data: err,
+            status: 400,
+            message: "Informe o e-mail!",
+          });
+        });
     })
     .catch(function (err) {
       return res.jsonError({
@@ -180,13 +258,61 @@ router.put("/:id", verifyJwt, async (req, res) => {
 
 router.delete("/:id", verifyJwt, async (req, res) => {
   const { email } = req.body;
+  const { id } = req.params;
 
-  await User.findOne({ where: { email } })
+  if (email)
+    await User.findOne({ where: { email } })
+      .then(async function (account) {
+        if (account) {
+          await User.update(
+            {
+              active: false,
+            },
+            {
+              where: { id: account.dataValues.id },
+            }
+          )
+            .then(function (updatedUsuario) {
+              return res.jsonOK({
+                data: updatedUsuario,
+                status: 200,
+                message: "Usuário excluído com sucesso!",
+              });
+            })
+            .catch(function (err) {
+              return res.jsonError({
+                data: err,
+                status: 400,
+                message: "Não foi possível atualizar",
+              });
+            });
+        }
+
+        return res.jsonError({
+          data: null,
+          status: 404,
+          message: "Não foi possível encontrar o usuário",
+        });
+      })
+      .catch(function (err) {
+        return res.jsonError({
+          data: err,
+          status: 400,
+          message: "Erro ao encontrar o usuário",
+        });
+      });
+
+  await User.findByPk(id)
     .then(async function (account) {
       if (account) {
-        await User.destroy({
-          where: { id: account.dataValues.id },
-        })
+        await User.update(
+          {
+            active: false,
+          },
+          {
+            where: { id: account.dataValues.id },
+          }
+        )
           .then(function (updatedUsuario) {
             return res.jsonOK({
               data: updatedUsuario,
