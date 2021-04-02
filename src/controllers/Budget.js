@@ -17,6 +17,8 @@ const {
   Schedule,
 } = require("../models");
 
+const SendEmail = require("./SendMail");
+
 router.post("/", verifyJwt, async (req, res) => {
   const {
     expirationDate,
@@ -30,21 +32,66 @@ router.post("/", verifyJwt, async (req, res) => {
   let savedBudget = null;
 
   try {
-    savedBudget = await Budget.create({
-      expirationDate: expirationDate || new Date(),
-      paymentMethod,
-      status: "PENDENTE",
-      userId,
-      userVehicleId,
-      scheduleId,
-    });
+    User.findByPk(userId)
+      .then(async function (user) {
+        savedBudget = await Budget.create({
+          expirationDate: expirationDate || new Date(),
+          paymentMethod,
+          status: "PENDENTE",
+          userId,
+          userVehicleId,
+          scheduleId,
+        });
 
-    await Schedule.update(
-      {
-        status: "FINALIZADO",
-      },
-      { where: { id: scheduleId } }
-    );
+        await Schedule.update(
+          {
+            status: "FINALIZADO",
+          },
+          { where: { id: scheduleId } }
+        );
+
+        if (products) {
+          const promisesProducts = products.map(async (item) => {
+            const product = await Product.findByPk(item.productId);
+
+            if (!product) {
+              return res.jsonError({
+                data: null,
+                status: 400,
+                message: "Erro ao tentar encontrar o produto",
+              });
+            }
+
+            const po = {
+              budgetId: savedBudget.dataValues.id,
+              productId: item.productId,
+              quantity: item.quantity,
+            };
+
+            await BudgetProduct.create(po, { w: 1 }, { returning: true });
+          });
+
+          Promise.all(await promisesProducts);
+        }
+
+        req.body.email = user.dataValues.email;
+        req.body.subject = "Premium Car Bauru - Seu orçamento está disponível";
+
+        SendEmail.sendUserEmail(req, "orcamento");
+
+        return res.jsonOK({
+          data: savedBudget,
+          status: 201,
+          message: "Orçamento criado com sucesso!",
+        });
+      })
+      .catch(function (err) {
+        return res.jsonError({
+          data: err,
+          status: 400,
+          message: "Erro ao cadastrar o orçamentos",
+        });
+      });
   } catch (err) {
     return res.jsonError({
       data: err,
@@ -52,36 +99,6 @@ router.post("/", verifyJwt, async (req, res) => {
       message: "Erro ao cadastrar o orçamentos",
     });
   }
-
-  if (products) {
-    const promisesProducts = products.map(async (item) => {
-      const product = await Product.findByPk(item.productId);
-
-      if (!product) {
-        return res.jsonError({
-          data: null,
-          status: 400,
-          message: "Erro ao tentar encontrar o produto",
-        });
-      }
-
-      const po = {
-        budgetId: savedBudget.dataValues.id,
-        productId: item.productId,
-        quantity: item.quantity,
-      };
-
-      await BudgetProduct.create(po, { w: 1 }, { returning: true });
-    });
-
-    Promise.all(await promisesProducts);
-  }
-
-  return res.jsonOK({
-    data: savedBudget,
-    status: 201,
-    message: "Orçamento criado com sucesso!",
-  });
 });
 
 router.get("/", verifyJwt, async (req, res) => {

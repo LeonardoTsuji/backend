@@ -174,7 +174,7 @@ router.delete("/:id", verifyJwt, async (req, res) => {
             return res.jsonOK({
               data: categoriaAtualizada,
               status: 200,
-              message: "Categoria excluído com sucesso!",
+              message: "Categoria excluída com sucesso!",
             });
           })
           .catch(function (err) {

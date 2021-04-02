@@ -8,6 +8,14 @@ const { verifyJwt } = require("../helpers/jwt");
 router.post("/", verifyJwt, async (req, res) => {
   const { model, brandId } = req.body;
 
+  if (!model || !brandId)
+    return res.jsonError({
+      status: 400,
+      data: null,
+      message:
+        "É necessário preencher os dados do modelo do veículo: modelo, fabricante",
+    });
+
   await Model.findOne({ where: { model } })
     .then(async function (modelo) {
       if (modelo)

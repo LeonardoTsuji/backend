@@ -11,8 +11,9 @@ router.post("/", verifyJwt, async (req, res) => {
   if (!name || !description || !price)
     return res.jsonError({
       status: 400,
-      data: err,
-      message: "É necessário preecnher os campos obrigatórios: nome, descrição e preço",
+      data: null,
+      message:
+        "É necessário preencher os campos obrigatórios: nome, descrição e preço",
     });
 
   await MechanicalService.findOne({ where: { name } })
@@ -102,6 +103,14 @@ router.get("/:id", verifyJwt, async (req, res) => {
 router.put("/:id", verifyJwt, async (req, res) => {
   const { id } = req.params;
   const { name, description, price } = req.body;
+
+  if (!name || !description || !price)
+    return res.jsonError({
+      status: 400,
+      data: null,
+      message:
+        "É necessário preencher os campos obrigatórios: nome, descrição e preço",
+    });
 
   await MechanicalService.findOne({ where: { id } })
     .then(async function (servicoMecanico) {

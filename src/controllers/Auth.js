@@ -18,7 +18,7 @@ const saltRounds = 10;
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  await User.findOne({ where: { email } })
+  await User.findOne({ where: { email, active: true } })
     .then(function (account) {
       const match = account
         ? bcrypt.compareSync(password, account.password)
@@ -113,6 +113,12 @@ router.post("/esqueci-senha", async (req, res) => {
   const { email } = req.body;
   await User.findOne({ where: { email } })
     .then(async function (account) {
+      if (!account)
+        return res.jsonError({
+          status: 404,
+          message: "Não foi possível localizar o usuário",
+        });
+
       const randomNumber = Math.floor(Math.random() * 100000 + 1);
       const hash = bcrypt.hashSync(randomNumber.toString(), saltRounds);
       const token = generateJwt({ id: account.dataValues.id });

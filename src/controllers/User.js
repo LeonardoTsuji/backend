@@ -68,9 +68,9 @@ router.post("/", async (req, res) => {
 
           req.body.login = email;
           req.body.password = password;
-          req.body.subject = "Premium Car Bauru - Primeiro Login";
+          req.body.subject = "Premium Car Bauru - Boas vindas";
 
-          SendEmail.sendUserEmail(req, "login");
+          SendEmail.sendUserEmail(req, "boas-vindas");
 
           return res.jsonOK({
             data: newUser,

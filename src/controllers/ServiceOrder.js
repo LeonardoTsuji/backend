@@ -6,7 +6,12 @@ const express = require("express");
 const router = express.Router();
 const { verifyJwt } = require("../helpers/jwt");
 
-const { ServiceOrder, Product, ServiceOrderProduct } = require("../models");
+const {
+  ServiceOrder,
+  Product,
+  ServiceOrderProduct,
+  Budget,
+} = require("../models");
 
 router.post("/", verifyJwt, async (req, res) => {
   const {
@@ -18,6 +23,7 @@ router.post("/", verifyJwt, async (req, res) => {
     userId,
     userVehicleId,
     products,
+    bugdetId,
   } = req.body;
 
   let savedServiceOrder;
@@ -32,6 +38,16 @@ router.post("/", verifyJwt, async (req, res) => {
       userId,
       userVehicleId,
     });
+
+    const budget = await Budget.findByPk(bugdetId);
+
+    if (budget)
+      await Budget.update(
+        {
+          status: "FINALIZADO",
+        },
+        { where: { id: bugdetId } }
+      );
   } catch (err) {
     return res.jsonError({
       data: err,
@@ -345,6 +361,31 @@ router.get("/:id/estatistica", verifyJwt, async (req, res) => {
         data: err,
         status: 400,
         message: "Erro ao tentar encontrar a ordem de serviço",
+      });
+    });
+});
+
+router.get("/:id/estatistica/mes", verifyJwt, async (req, res) => {
+  await ServiceOrder.findAll({
+    attributes: [
+      [sequelize.fn("COUNT", "*"), "quantity"],
+      [sequelize.fn("MONTH", sequelize.col("createdAt")), "month"],
+    ],
+    group: [[sequelize.fn("MONTH", sequelize.col("createdAt")), "month"]],
+  })
+    .then(function (ordemServico) {
+      return res.jsonOK({
+        data: { count: ordemServico },
+        status: 200,
+        message: "Ordem de serviço encontrada com sucesso!",
+      });
+    })
+    .catch(function (err) {
+      console.log(err, "err");
+      return res.jsonError({
+        data: err,
+        status: 400,
+        message: "Erro ao tentar encontrar a ardem de serviço",
       });
     });
 });

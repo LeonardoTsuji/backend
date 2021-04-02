@@ -11,7 +11,7 @@ module.exports = {
       [
         {
           email: "leonardo_tsuji@hotmail.com",
-          password: bcrypt.hashSync("300797", saltRounds),
+          password: bcrypt.hashSync("123456", saltRounds),
           name: "Leonardo",
           phone: "14998506827",
           roleId: 1,
@@ -21,7 +21,7 @@ module.exports = {
         },
         {
           email: "fabio_tsuji@hotmail.com",
-          password: bcrypt.hashSync("300797", saltRounds),
+          password: bcrypt.hashSync("123456", saltRounds),
           name: "Fabio",
           phone: "14998506827",
           roleId: 2,
@@ -30,9 +30,9 @@ module.exports = {
           updatedAt: new Date(),
         },
         {
-          email: "rogerio_tsuji@hotmail.com",
-          password: bcrypt.hashSync("300797", saltRounds),
-          name: "Rogerio",
+          email: "leonardohkt@gmail.com",
+          password: bcrypt.hashSync("123456", saltRounds),
+          name: "Leonardo Hideki",
           phone: "14998506827",
           roleId: 3,
           active: true,
