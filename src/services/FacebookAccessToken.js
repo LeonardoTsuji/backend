@@ -8,7 +8,7 @@ async function getAccessTokenFromCode(code) {
       params: {
         client_id: process.env.FACEBOOK_ID,
         client_secret: process.env.FACEBOOK_SECRET,
-        redirect_uri: "http://localhost:3000/auth/facebook/",
+        redirect_uri: process.env.FACEBOOK_REDIRECT_URI,
         code,
       },
     });
